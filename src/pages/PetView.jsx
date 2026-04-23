@@ -33,21 +33,28 @@ export default function PetView() {
     setData(data);
   }
 
-  // 🔥 limpa telefone
+  // 🔥 TELEFONE LIMPO
   function limparTelefone(tel) {
-    return tel ? tel.replace(/\D/g, "") : null;
+    return (tel || "").replace(/\D/g, "");
   }
 
-  // 🔥 telefone principal (regra oficial)
+  // 🔥 TELEFONE PRINCIPAL
   function getTelefonePrincipal() {
-    return (
-      limparTelefone(data?.tutor1_telefone) ||
-      limparTelefone(data?.tutor2_telefone)
-    );
+    const t1 = limparTelefone(data?.tutor1_telefone);
+    const t2 = limparTelefone(data?.tutor2_telefone);
+
+    if (t1.length >= 10) return t1;
+    if (t2.length >= 10) return t2;
+
+    return null;
+  }
+
+  function telefoneValido(tel) {
+    return tel && tel.length >= 10;
   }
 
   function enviarLocalizacao(telefone) {
-    if (!telefone) {
+    if (!telefoneValido(telefone)) {
       alert("Telefone não disponível");
       return;
     }
@@ -66,7 +73,7 @@ export default function PetView() {
         const { latitude, longitude } = pos.coords;
 
         const mensagem = encodeURIComponent(
-          `Encontrei seu pet! 🐶\nLocalização:\nhttps://maps.google.com/?q=${latitude},${longitude}`
+          `Encontrei o pet!\nLocalização:\nhttps://maps.google.com/?q=${latitude},${longitude}`
         );
 
         window.open(`https://wa.me/55${telefone}?text=${mensagem}`, "_blank");
@@ -94,11 +101,14 @@ export default function PetView() {
 
         <h2 style={nome}>Oi, me chamo</h2>
         <h1 style={petNome}>{data.name}</h1>
-        <p style={frase}>Estou perdido 😢 Me ajude a voltar pra casa!</p>
+
+        <p style={frase}>
+          Estou perdido 😢 Me ajude a voltar pra casa!
+        </p>
       </div>
 
       {/* CONTATO PRINCIPAL */}
-      {telefonePrincipal && (
+      {telefoneValido(telefonePrincipal) && (
         <div style={card}>
           <p style={label}>CONTATO PRINCIPAL</p>
           <h3>{data.tutor1_nome || data.tutor2_nome || "Responsável"}</h3>
@@ -118,7 +128,11 @@ export default function PetView() {
           </div>
 
           <button
-            style={btnLocal}
+            style={{
+              ...btnLocal,
+              opacity: telefoneValido(telefonePrincipal) ? 1 : 0.5
+            }}
+            disabled={!telefoneValido(telefonePrincipal)}
             onClick={() => enviarLocalizacao(telefonePrincipal)}
           >
             {loadingLoc ? "Enviando..." : "📍 Enviar localização"}
@@ -126,15 +140,18 @@ export default function PetView() {
         </div>
       )}
 
-      {/* CONTATO 2 (se for diferente do principal) */}
-      {data.tutor2_telefone &&
+      {/* CONTATO 2 */}
+      {telefoneValido(data?.tutor2_telefone) &&
         limparTelefone(data.tutor2_telefone) !== telefonePrincipal && (
           <div style={card}>
             <p style={label}>CONTATO 2</p>
             <h3>{data.tutor2_nome}</h3>
 
             <div style={botoes}>
-              <a href={`tel:${limparTelefone(data.tutor2_telefone)}`} style={btnLigar}>
+              <a
+                href={`tel:${limparTelefone(data.tutor2_telefone)}`}
+                style={btnLigar}
+              >
                 📞 Ligar
               </a>
 
@@ -159,8 +176,8 @@ export default function PetView() {
 
       {/* RODAPÉ */}
       <p style={rodape}>
-        Este QR ajuda a conectar pessoas em situações de emergência.
-        Obrigado por ajudar 🙏
+        Este QR ajuda a encontrar pets perdidos 🐾  
+        Compartilhe com responsabilidade 🙏
       </p>
 
     </Container>
@@ -189,6 +206,7 @@ const foto = {
 
 const nome = { margin: 0, fontSize: 16 };
 const petNome = { margin: 0, fontSize: 26 };
+
 const frase = { marginTop: 5 };
 
 const card = {
