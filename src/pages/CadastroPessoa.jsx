@@ -8,7 +8,7 @@ export default function CadastroPessoa() {
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
-  const [dataNascimento, setDataNascimento] = useState(""); // 🔥 NOVO
+  const [dataNascimento, setDataNascimento] = useState("");
   const [contato1Nome, setContato1Nome] = useState("");
   const [contato1Telefone, setContato1Telefone] = useState("");
   const [contato2Nome, setContato2Nome] = useState("");
@@ -47,6 +47,7 @@ export default function CadastroPessoa() {
 
     let foto_url = null;
 
+    // 🔥 UPLOAD COM TRATAMENTO CORRETO
     if (foto) {
       const fileName = `${code}_${Date.now()}`;
 
@@ -54,22 +55,26 @@ export default function CadastroPessoa() {
         .from("profile-photos")
         .upload(fileName, foto);
 
-      if (!uploadError) {
-        const { data } = supabase.storage
-          .from("profile-photos")
-          .getPublicUrl(fileName);
-
-        foto_url = data.publicUrl;
+      if (uploadError) {
+        console.log("ERRO UPLOAD:", uploadError);
+        alert("Erro ao enviar imagem");
+        return;
       }
+
+      const { data } = supabase.storage
+        .from("profile-photos")
+        .getPublicUrl(fileName);
+
+      foto_url = data.publicUrl;
     }
 
+    // 🔥 UPDATE LIMPO
     const { error } = await supabase
       .from("tags")
       .update({
         name,
-        data_nascimento: dataNascimento, // 🔥 NOVO
+        data_nascimento: dataNascimento,
         tipo: "pessoa",
-        telefone: contato1Telefone,
         tutor1_nome: contato1Nome,
         tutor1_telefone: contato1Telefone,
         tutor2_nome: contato2Nome,
@@ -84,10 +89,10 @@ export default function CadastroPessoa() {
       .eq("code", code);
 
     if (error) {
-  console.log("ERRO SUPABASE:", error);
-  alert(error.message);
-  return;
-}
+      console.log("ERRO SUPABASE:", error);
+      alert(error.message);
+      return;
+    }
 
     navigate(`/pessoa/${code}`);
   }
@@ -124,7 +129,6 @@ export default function CadastroPessoa() {
           onChange={(e) => setName(e.target.value)}
         />
 
-        {/* 🔥 DATA DE NASCIMENTO */}
         <input
           type="date"
           style={input}
