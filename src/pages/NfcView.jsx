@@ -12,23 +12,28 @@ export default function NfcView() {
   }, []);
 
   async function verificar() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("tags")
       .select("*")
       .eq("code", code)
       .single();
 
-    if (!data) return;
+    if (error || !data) return;
 
+    // 🔒 NÃO ATIVADO
     if (!data.locked) {
       setBloqueado(true);
       return;
     }
 
+    // 🔓 ATIVADO → LIBERA
+    setBloqueado(false);
+
+    // 🔥 REDIRECIONAMENTO CORRETO
     if (data.tipo === "pet") {
-      navigate(`/view/pet/${code}`);
+      navigate(`/pet/${code}`);
     } else {
-      navigate(`/view/pessoa/${code}`);
+      navigate(`/pessoa/${code}`);
     }
   }
 
