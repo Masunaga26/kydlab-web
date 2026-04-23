@@ -14,24 +14,24 @@ export default function PetView() {
 
   async function carregar() {
     try {
-      const { data, error } = await supabase
+      const { data: tag, error } = await supabase
         .from("tags")
         .select("*")
         .eq("code", code)
         .single();
 
-      if (error || !data) {
+      if (error || !tag) {
         alert("Código inválido");
         window.location.href = "/";
         return;
       }
 
-      if (!data.locked) {
+      if (!tag.locked) {
         window.location.href = `/escolha/${code}`;
         return;
       }
 
-      setData(data);
+      setData(tag);
 
     } catch (err) {
       console.error("Erro ao carregar PetView:", err);
@@ -45,7 +45,6 @@ export default function PetView() {
     return (tel || "").replace(/\D/g, "");
   }
 
-  // 🔥 TELEFONES NORMALIZADOS
   const telefone1 = limparTelefone(data?.tutor1_telefone);
   const telefone2 = limparTelefone(data?.tutor2_telefone);
 
@@ -84,7 +83,11 @@ export default function PetView() {
           `Encontrei o pet!\nLocalização:\nhttps://maps.google.com/?q=${latitude},${longitude}`
         );
 
-        window.open(`https://wa.me/55${telefone}?text=${mensagem}`, "_blank");
+        window.open(
+          `https://wa.me/55${telefone}?text=${mensagem}`,
+          "_blank",
+          "noopener,noreferrer"
+        );
       },
       () => {
         setLoadingLoc(false);
@@ -106,7 +109,7 @@ export default function PetView() {
         />
 
         <h2 style={nome}>Oi, me chamo</h2>
-        <h1 style={petNome}>{data.name}</h1>
+        <h1 style={petNome}>{data.name || "Pet"}</h1>
 
         <p style={frase}>
           Estou perdido 😢 Me ajude a voltar pra casa!
@@ -127,6 +130,7 @@ export default function PetView() {
             <a
               href={`https://wa.me/55${telefonePrincipal}`}
               target="_blank"
+              rel="noopener noreferrer"
               style={btnWhats}
             >
               💬 WhatsApp
@@ -161,6 +165,7 @@ export default function PetView() {
               <a
                 href={`https://wa.me/55${telefone2}`}
                 target="_blank"
+                rel="noopener noreferrer"
                 style={btnWhats}
               >
                 💬 WhatsApp

@@ -228,4 +228,117 @@ export default function PessoaView() {
 
     </Container>
   );
-}
+const header = {
+  background: "#ff2d2d",
+  padding: "25px 15px",
+  borderRadius: "0 0 20px 20px",
+  textAlign: "center",
+  color: "#fff",
+  marginBottom: 20
+};
+
+const foto = {
+  width: 120,
+  height: 120,
+  borderRadius: "50%",
+  objectFit: "cover",
+  border: "4px solid #fff",
+  marginBottom: 10
+};
+
+const nome = { margin: 0, fontSize: 16 };
+const pessoaNome = { margin: 0, fontSize: 26 };
+
+const idadeStyle = {
+  marginTop: 5,
+  fontSize: 14,
+  opacity: 0.9
+};
+
+const frase = { marginTop: 5 };
+
+const tipoBox = {
+  background: "#ffeaea",
+  padding: 12,
+  borderRadius: 10,
+  marginBottom: 15,
+  textAlign: "center",
+  fontWeight: "bold",
+  color: "#d10000"
+};
+
+const card = {
+  background: "#fff",
+  padding: 15,
+  borderRadius: 15,
+  marginBottom: 15,
+  boxShadow: "0 4px 15px rgba(0,0,0,0.08)"
+};
+
+const label = {
+  fontSize: 12,
+  color: "#999",
+  marginBottom: 5
+};
+
+const botoes = {
+  display: "flex",
+  gap: 10,
+  marginTop: 10,
+  flexWrap: "wrap"
+};
+
+const btnLigar = {
+  flex: 1,
+  background: "#ff2d2d",
+  color: "#fff",
+  padding: 12,
+  textAlign: "center",
+  borderRadius: 12,
+  textDecoration: "none",
+  fontWeight: "600"
+};
+
+const btnWhats = {
+  flex: 1,
+  background: "#25D366",
+  color: "#fff",
+  padding: 12,
+  textAlign: "center",
+  borderRadius: 12,
+  textDecoration: "none",
+  fontWeight: "600"
+};
+
+const btnLocal = {
+  marginTop: 10,
+  width: "100%",
+  padding: 14,
+  borderRadius: 12,
+  border: "none",
+  background: "#ff2d2d",
+  color: "#fff",
+  fontWeight: "bold"
+};
+
+const btnSamu = {
+  display: "block",
+  width: "100%",
+  padding: 14,
+  borderRadius: 12,
+  textAlign: "center",
+  background: "#d10000",
+  color: "#fff",
+  textDecoration: "none",
+  fontWeight: "bold",
+  marginBottom: 15
+};
+
+const rodape = {
+  textAlign: "center",
+  fontSize: 12,
+  color: "#777",
+  marginTop: 20,
+  lineHeight: 1.4
+};
+}	
