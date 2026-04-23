@@ -119,7 +119,7 @@ export default function CadastroPessoa() {
   return (
     <Container>
 
-      <div style={{}}>
+      <div style={header}>
         <h2>👤 Cadastro de Pessoa</h2>
         <p style={subtitle}>Identificação • {code}</p>
       </div>
@@ -146,22 +146,19 @@ export default function CadastroPessoa() {
           onChange={(e) => setName(e.target.value)}
         />
 
-        {/* 🔥 NOVO DATEPICKER */}
-        <div>
-          <label style={label}>📅 Data de nascimento</label>
+        <label style={label}>📅 Data de nascimento</label>
 
-          <DatePicker
-            selected={dataNascimento}
-            onChange={(date) => setDataNascimento(date)}
-            dateFormat="dd/MM/yyyy"
-            maxDate={new Date()}
-            showYearDropdown
-            scrollableYearDropdown
-            yearDropdownItemNumber={100}
-            placeholderText="Selecione a data"
-            className="custom-datepicker"
-          />
-        </div>
+        <DatePicker
+          selected={dataNascimento}
+          onChange={(date) => setDataNascimento(date)}
+          dateFormat="dd/MM/yyyy"
+          maxDate={new Date()}
+          showYearDropdown
+          scrollableYearDropdown
+          yearDropdownItemNumber={100}
+          placeholderText="Selecione a data"
+          className="custom-datepicker"
+        />
       </div>
 
       <div style={card}>
@@ -196,6 +193,10 @@ export default function CadastroPessoa() {
 
     </Container>
   );
+}
+
+/* 🔥 AGORA FORA DO COMPONENTE */
+
 const header = {
   textAlign: "center",
   marginBottom: 20
@@ -255,16 +256,6 @@ const label = {
   display: "block"
 };
 
-const alerta = {
-  background: "#fff5f5",
-  border: "1px solid #ffb3b3",
-  padding: 12,
-  borderRadius: 10,
-  fontSize: 13,
-  marginBottom: 15,
-  textAlign: "center"
-};
-
 const botao = {
   width: "100%",
   padding: 16,
@@ -275,6 +266,3 @@ const botao = {
   fontSize: 16,
   fontWeight: "bold"
 };
-}
-
-/* mantém seus estilos iguais */
