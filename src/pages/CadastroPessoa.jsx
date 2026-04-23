@@ -11,8 +11,11 @@ export default function CadastroPessoa() {
 
   const [name, setName] = useState("");
 
-  // 🔥 NOVO PADRÃO DATA
-  const [dataNascimento, setDataNascimento] = useState(null);
+  // 🔥 DATA PADRÃO (18 anos atrás)
+  const dataPadrao = new Date();
+  dataPadrao.setFullYear(dataPadrao.getFullYear() - 18);
+
+  const [dataNascimento, setDataNascimento] = useState(dataPadrao);
   const [openDate, setOpenDate] = useState(false);
 
   const [contato1Nome, setContato1Nome] = useState("");
@@ -30,7 +33,6 @@ export default function CadastroPessoa() {
     return tel.replace(/\D/g, "");
   }
 
-  // 🔥 FORMATAR DATA
   function formatarDataBR(date) {
     if (!date) return "";
     return date.toLocaleDateString("pt-BR");
@@ -41,7 +43,6 @@ export default function CadastroPessoa() {
     return date.toISOString().split("T")[0];
   }
 
-  // 🔥 COMPRESSÃO IMAGEM
   async function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -160,7 +161,7 @@ export default function CadastroPessoa() {
           onChange={(e) => setName(e.target.value)}
         />
 
-        {/* 🔥 PICKER NOVO */}
+        {/* 🔥 DATA BONITA */}
         <div>
           <label style={label}>📅 Data de nascimento</label>
 
@@ -173,7 +174,7 @@ export default function CadastroPessoa() {
           />
 
           <DatePicker
-            value={dataNascimento || new Date()}
+            value={dataNascimento} // 🔥 NUNCA NULL
             isOpen={openDate}
             onSelect={(date) => {
               setDataNascimento(date);
