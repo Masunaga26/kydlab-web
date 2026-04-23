@@ -14,25 +14,24 @@ export default function PessoaView() {
 
   async function carregar() {
     try {
-      const { data, error } = await supabase
+      const { data: tag, error } = await supabase
         .from("tags")
         .select("*")
         .eq("code", code)
         .single();
 
-      if (error || !data) {
+      if (error || !tag) {
         alert("Código inválido");
         window.location.href = "/";
         return;
       }
 
-      if (!data.locked) {
+      if (!tag.locked) {
         window.location.href = `/escolha/${code}`;
         return;
       }
 
-      setData(data);
-
+      setData(tag);
     } catch (err) {
       console.error("Erro ao carregar PessoaView:", err);
       alert("Erro ao carregar dados");
@@ -40,20 +39,17 @@ export default function PessoaView() {
     }
   }
 
-  // 🔥 TELEFONE LIMPO
   function limparTelefone(tel) {
     return (tel || "").replace(/\D/g, "");
   }
+
+  const telefone1 = limparTelefone(data?.tutor1_telefone);
+  const telefone2 = limparTelefone(data?.tutor2_telefone);
 
   function telefoneValido(tel) {
     return tel && tel.length >= 10;
   }
 
-  // 🔥 TELEFONES NORMALIZADOS
-  const telefone1 = limparTelefone(data?.tutor1_telefone);
-  const telefone2 = limparTelefone(data?.tutor2_telefone);
-
-  // 🔥 TELEFONE PRINCIPAL
   const telefonePrincipal =
     telefoneValido(telefone1)
       ? telefone1
@@ -61,7 +57,6 @@ export default function PessoaView() {
       ? telefone2
       : null;
 
-  // 🔥 IDADE
   function calcularIdade(dataNascimento) {
     if (!dataNascimento) return null;
 
@@ -101,7 +96,11 @@ export default function PessoaView() {
           `Estou com essa pessoa!\nLocalização:\nhttps://maps.google.com/?q=${latitude},${longitude}`
         );
 
-        window.open(`https://wa.me/55${telefone}?text=${mensagem}`, "_blank");
+        window.open(
+          `https://wa.me/55${telefone}?text=${mensagem}`,
+          "_blank",
+          "noopener,noreferrer"
+        );
       },
       () => {
         setLoadingLoc(false);
@@ -114,7 +113,6 @@ export default function PessoaView() {
 
   return (
     <Container>
-
       {/* HEADER */}
       <div style={header}>
         <img
@@ -123,7 +121,7 @@ export default function PessoaView() {
         />
 
         <h2 style={nome}>Olá, meu nome é</h2>
-        <h1 style={pessoaNome}>{data.name}</h1>
+        <h1 style={pessoaNome}>{data.name || "Pessoa"}</h1>
 
         {data.data_nascimento && (
           <p style={idadeStyle}>
@@ -160,6 +158,7 @@ export default function PessoaView() {
             <a
               href={`https://wa.me/55${telefonePrincipal}`}
               target="_blank"
+              rel="noopener noreferrer"
               style={btnWhats}
             >
               💬 WhatsApp
@@ -194,6 +193,7 @@ export default function PessoaView() {
               <a
                 href={`https://wa.me/55${telefone2}`}
                 target="_blank"
+                rel="noopener noreferrer"
                 style={btnWhats}
               >
                 💬 WhatsApp
@@ -225,9 +225,12 @@ export default function PessoaView() {
         Este QR ajuda em situações de emergência.
         Use estas informações com responsabilidade 🙏
       </p>
-
     </Container>
   );
+}
+
+/* ===== ESTILOS ===== */
+
 const header = {
   background: "#ff2d2d",
   padding: "25px 15px",
@@ -341,4 +344,3 @@ const rodape = {
   marginTop: 20,
   lineHeight: 1.4
 };
-}	
