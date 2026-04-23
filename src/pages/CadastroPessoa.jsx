@@ -2,14 +2,19 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Container from "../components/Container";
-import imageCompression from "browser-image-compression"; // 🔥 NOVO
+import imageCompression from "browser-image-compression";
+import DatePicker from "react-mobile-datepicker";
 
 export default function CadastroPessoa() {
   const { code } = useParams();
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
-  const [dataNascimento, setDataNascimento] = useState("");
+
+  // 🔥 NOVO PADRÃO DATA
+  const [dataNascimento, setDataNascimento] = useState(null);
+  const [openDate, setOpenDate] = useState(false);
+
   const [contato1Nome, setContato1Nome] = useState("");
   const [contato1Telefone, setContato1Telefone] = useState("");
   const [contato2Nome, setContato2Nome] = useState("");
@@ -21,12 +26,22 @@ export default function CadastroPessoa() {
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // 🔥 LIMPAR TELEFONE
   function limparTelefone(tel) {
     return tel.replace(/\D/g, "");
   }
 
-  // 🔥 COMPRESSÃO DE IMAGEM
+  // 🔥 FORMATAR DATA
+  function formatarDataBR(date) {
+    if (!date) return "";
+    return date.toLocaleDateString("pt-BR");
+  }
+
+  function converterData(date) {
+    if (!date) return null;
+    return date.toISOString().split("T")[0];
+  }
+
+  // 🔥 COMPRESSÃO IMAGEM
   async function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -88,10 +103,9 @@ export default function CadastroPessoa() {
       .from("tags")
       .update({
         name,
-        data_nascimento: dataNascimento,
+        data_nascimento: converterData(dataNascimento),
         tipo: "pessoa",
 
-        // 🔥 PADRÃO NOVO (SEM TELEFONE ANTIGO)
         tutor1_nome: contato1Nome,
         tutor1_telefone: limparTelefone(contato1Telefone),
 
@@ -119,13 +133,11 @@ export default function CadastroPessoa() {
   return (
     <Container>
 
-      {/* HEADER */}
       <div style={header}>
         <h2>👤 Cadastro de Pessoa</h2>
         <p style={subtitle}>Identificação • {code}</p>
       </div>
 
-      {/* FOTO + NOME */}
       <div style={card}>
         <h3>📸 Foto</h3>
 
@@ -148,18 +160,31 @@ export default function CadastroPessoa() {
           onChange={(e) => setName(e.target.value)}
         />
 
+        {/* 🔥 PICKER NOVO */}
         <div>
           <label style={label}>📅 Data de nascimento</label>
+
           <input
-            type="date"
             style={input}
-            value={dataNascimento}
-            onChange={(e) => setDataNascimento(e.target.value)}
+            placeholder="Selecionar data"
+            value={formatarDataBR(dataNascimento)}
+            onClick={() => setOpenDate(true)}
+            readOnly
+          />
+
+          <DatePicker
+            value={dataNascimento || new Date()}
+            isOpen={openDate}
+            onSelect={(date) => {
+              setDataNascimento(date);
+              setOpenDate(false);
+            }}
+            onCancel={() => setOpenDate(false)}
+            theme="ios"
           />
         </div>
       </div>
 
-      {/* SAÚDE */}
       <div style={card}>
         <h3>🩸 Saúde</h3>
 
@@ -180,7 +205,6 @@ export default function CadastroPessoa() {
         <textarea style={input} placeholder="Medicamentos" value={medicamentos} onChange={(e) => setMedicamentos(e.target.value)} />
       </div>
 
-      {/* CONTATOS */}
       <div style={card}>
         <h3>📞 Contatos</h3>
 
@@ -191,13 +215,11 @@ export default function CadastroPessoa() {
         <input style={input} placeholder="Telefone contato 2" value={contato2Telefone} onChange={(e) => setContato2Telefone(e.target.value)} />
       </div>
 
-      {/* ALERTA */}
       <div style={alerta}>
         ⚠️ Revise os dados antes de salvar.  
         Essas informações serão usadas em emergências.
       </div>
 
-      {/* BOTÃO */}
       <button style={botao} onClick={salvar}>
         💾 Salvar Cadastro
       </button>
