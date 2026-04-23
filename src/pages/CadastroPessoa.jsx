@@ -20,6 +20,11 @@ export default function CadastroPessoa() {
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
 
+  // 🔥 limpar telefone
+  function limparTelefone(tel) {
+    return tel.replace(/\D/g, "");
+  }
+
   function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -45,9 +50,14 @@ export default function CadastroPessoa() {
       return;
     }
 
+    // 🔥 validar tamanho da imagem
+    if (foto && foto.size > 3 * 1024 * 1024) {
+      alert("Imagem muito grande (máx 3MB)");
+      return;
+    }
+
     let foto_url = null;
 
-    // 🔥 UPLOAD COM TRATAMENTO CORRETO
     if (foto) {
       const fileName = `${code}_${Date.now()}`;
 
@@ -55,30 +65,28 @@ export default function CadastroPessoa() {
         .from("profile-photos")
         .upload(fileName, foto);
 
-      if (uploadError) {
-        console.log("ERRO UPLOAD:", uploadError);
-        alert("Erro ao enviar imagem");
-        return;
+      if (!uploadError) {
+        const { data } = supabase.storage
+          .from("profile-photos")
+          .getPublicUrl(fileName);
+
+        foto_url = data.publicUrl;
       }
-
-      const { data } = supabase.storage
-        .from("profile-photos")
-        .getPublicUrl(fileName);
-
-      foto_url = data.publicUrl;
     }
 
-    // 🔥 UPDATE LIMPO
     const { error } = await supabase
       .from("tags")
       .update({
         name,
         data_nascimento: dataNascimento,
         tipo: "pessoa",
+
+        telefone: limparTelefone(contato1Telefone),
         tutor1_nome: contato1Nome,
-        tutor1_telefone: contato1Telefone,
+        tutor1_telefone: limparTelefone(contato1Telefone),
         tutor2_nome: contato2Nome,
-        tutor2_telefone: contato2Telefone,
+        tutor2_telefone: limparTelefone(contato2Telefone),
+
         tipo_sanguineo: tipoSanguineo,
         comorbidades,
         alergias,
@@ -106,7 +114,7 @@ export default function CadastroPessoa() {
         <p style={subtitle}>Identificação • {code}</p>
       </div>
 
-      {/* FOTO */}
+      {/* FOTO + NOME */}
       <div style={card}>
         <h3>📸 Foto</h3>
 
@@ -129,12 +137,16 @@ export default function CadastroPessoa() {
           onChange={(e) => setName(e.target.value)}
         />
 
-        <input
-          type="date"
-          style={input}
-          value={dataNascimento}
-          onChange={(e) => setDataNascimento(e.target.value)}
-        />
+        {/* 🔥 DATA COM LABEL */}
+        <div>
+          <label style={label}>📅 Data de nascimento</label>
+          <input
+            type="date"
+            style={input}
+            value={dataNascimento}
+            onChange={(e) => setDataNascimento(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* SAÚDE */}
@@ -230,7 +242,15 @@ const input = {
   padding: 12,
   borderRadius: 10,
   border: "1px solid #ddd",
-  fontSize: 14
+  fontSize: 14,
+  marginTop: 5
+};
+
+const label = {
+  fontSize: 13,
+  color: "#555",
+  marginTop: 10,
+  display: "block"
 };
 
 const alerta = {

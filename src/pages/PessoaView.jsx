@@ -33,7 +33,20 @@ export default function PessoaView() {
     setData(data);
   }
 
-  // 🔥 CALCULAR IDADE
+  // 🔥 limpar telefone
+  function limparTelefone(tel) {
+    return tel ? tel.replace(/\D/g, "") : null;
+  }
+
+  // 🔥 telefone principal
+  function getTelefonePrincipal() {
+    return (
+      limparTelefone(data?.tutor1_telefone) ||
+      limparTelefone(data?.tutor2_telefone)
+    );
+  }
+
+  // 🔥 calcular idade
   function calcularIdade(dataNascimento) {
     if (!dataNascimento) return null;
 
@@ -51,6 +64,11 @@ export default function PessoaView() {
   }
 
   function enviarLocalizacao(telefone) {
+    if (!telefone) {
+      alert("Telefone não disponível");
+      return;
+    }
+
     if (!navigator.geolocation) {
       alert("Seu dispositivo não suporta localização.");
       return;
@@ -79,6 +97,8 @@ export default function PessoaView() {
 
   if (!data) return <p style={{ textAlign: "center" }}>Carregando...</p>;
 
+  const telefonePrincipal = getTelefonePrincipal();
+
   return (
     <Container>
 
@@ -92,7 +112,7 @@ export default function PessoaView() {
         <h2 style={nome}>Olá, meu nome é</h2>
         <h1 style={pessoaNome}>{data.name}</h1>
 
-        {/* 🔥 IDADE */}
+        {/* IDADE */}
         {data.data_nascimento && (
           <p style={idadeStyle}>
             🎂 {calcularIdade(data.data_nascimento)} anos
@@ -102,66 +122,69 @@ export default function PessoaView() {
         <p style={frase}>🚨 Preciso de ajuda em uma emergência</p>
       </div>
 
-      {/* 🚑 SAMU */}
+      {/* SAMU */}
       <a href="tel:192" style={btnSamu}>
         🚑 Emergência SAMU 192
       </a>
 
-      {/* 🩸 TIPO SANGUÍNEO */}
+      {/* TIPO SANGUÍNEO */}
       {data.tipo_sanguineo && (
         <div style={tipoBox}>
           🩸 Tipo sanguíneo: <strong>{data.tipo_sanguineo}</strong>
         </div>
       )}
 
-      {/* CONTATO 1 */}
-      <div style={card}>
-        <p style={label}>CONTATO PRINCIPAL</p>
-        <h3>{data.tutor1_nome}</h3>
-
-        <div style={botoes}>
-          <a href={`tel:${data.tutor1_telefone}`} style={btnLigar}>
-            📞 Ligar
-          </a>
-
-          <a
-            href={`https://wa.me/55${data.tutor1_telefone}`}
-            target="_blank"
-            style={btnWhats}
-          >
-            💬 WhatsApp
-          </a>
-        </div>
-
-        <button
-          style={btnLocal}
-          onClick={() => enviarLocalizacao(data.tutor1_telefone)}
-        >
-          {loadingLoc ? "Enviando..." : "📍 Enviar localização"}
-        </button>
-      </div>
-
-      {/* CONTATO 2 */}
-      {data.tutor2_telefone && (
+      {/* CONTATO PRINCIPAL */}
+      {telefonePrincipal && (
         <div style={card}>
-          <p style={label}>CONTATO 2</p>
-          <h3>{data.tutor2_nome}</h3>
+          <p style={label}>CONTATO PRINCIPAL</p>
+          <h3>{data.tutor1_nome || data.tutor2_nome || "Responsável"}</h3>
 
           <div style={botoes}>
-            <a href={`tel:${data.tutor2_telefone}`} style={btnLigar}>
+            <a href={`tel:${telefonePrincipal}`} style={btnLigar}>
               📞 Ligar
             </a>
 
             <a
-              href={`https://wa.me/55${data.tutor2_telefone}`}
+              href={`https://wa.me/55${telefonePrincipal}`}
               target="_blank"
               style={btnWhats}
             >
               💬 WhatsApp
             </a>
           </div>
+
+          <button
+            style={btnLocal}
+            onClick={() => enviarLocalizacao(telefonePrincipal)}
+          >
+            {loadingLoc ? "Enviando..." : "📍 Enviar localização"}
+          </button>
         </div>
       )}
+
+      {/* CONTATO 2 (se diferente) */}
+      {data.tutor2_telefone &&
+        limparTelefone(data.tutor2_telefone) !== telefonePrincipal && (
+          <div style={card}>
+            <p style={label}>CONTATO 2</p>
+            <h3>{data.tutor2_nome}</h3>
+
+            <div style={botoes}>
+              <a href={`tel:${limparTelefone(data.tutor2_telefone)}`} style={btnLigar}>
+                📞 Ligar
+              </a>
+
+              <a
+                href={`https://wa.me/55${limparTelefone(data.tutor2_telefone)}`}
+                target="_blank"
+                style={btnWhats}
+              >
+                💬 WhatsApp
+              </a>
+            </div>
+          </div>
+        )}
 
       {/* SAÚDE */}
       {(data.comorbidades || data.alergias || data.medicamentos) && (

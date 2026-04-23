@@ -16,6 +16,11 @@ export default function CadastroPet() {
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
 
+  // 🔥 LIMPAR TELEFONE
+  function limparTelefone(tel) {
+    return tel.replace(/\D/g, "");
+  }
+
   function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -25,7 +30,6 @@ export default function CadastroPet() {
   }
 
   async function salvar() {
-    // 🔎 verifica se já está bloqueado
     const { data: check } = await supabase
       .from("tags")
       .select("locked")
@@ -37,15 +41,19 @@ export default function CadastroPet() {
       return;
     }
 
-    // 🔎 validação básica
     if (!name || !tutor1Telefone) {
       alert("Preencha os campos obrigatórios");
       return;
     }
 
+    // 🔥 VALIDAR TAMANHO DA IMAGEM
+    if (foto && foto.size > 3 * 1024 * 1024) {
+      alert("Imagem muito grande (máx 3MB)");
+      return;
+    }
+
     let foto_url = null;
 
-    // 📸 UPLOAD DE FOTO (AGORA COM TRATAMENTO CORRETO)
     if (foto) {
       const fileName = `${code}_${Date.now()}`;
 
@@ -53,29 +61,28 @@ export default function CadastroPet() {
         .from("profile-photos")
         .upload(fileName, foto);
 
-      if (uploadError) {
-        console.log("ERRO UPLOAD:", uploadError);
-        alert("Erro ao enviar imagem");
-        return;
+      if (!uploadError) {
+        const { data } = supabase.storage
+          .from("profile-photos")
+          .getPublicUrl(fileName);
+
+        foto_url = data.publicUrl;
       }
-
-      const { data } = supabase.storage
-        .from("profile-photos")
-        .getPublicUrl(fileName);
-
-      foto_url = data.publicUrl;
     }
 
-    // 💾 UPDATE LIMPO (SEM CAMPO DUPLICADO)
     const { error } = await supabase
       .from("tags")
       .update({
         name,
         tipo: "pet",
+
+        // 🔥 TELEFONES LIMPOS
+        telefone: limparTelefone(tutor1Telefone),
         tutor1_nome: tutor1Nome,
-        tutor1_telefone: tutor1Telefone,
+        tutor1_telefone: limparTelefone(tutor1Telefone),
         tutor2_nome: tutor2Nome,
-        tutor2_telefone: tutor2Telefone,
+        tutor2_telefone: limparTelefone(tutor2Telefone),
+
         observacoes,
         foto_url,
         locked: true
@@ -88,7 +95,6 @@ export default function CadastroPet() {
       return;
     }
 
-    // 🚀 REDIRECIONA
     navigate(`/pet/${code}`);
   }
 

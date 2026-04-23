@@ -33,7 +33,25 @@ export default function PetView() {
     setData(data);
   }
 
+  // 🔥 limpa telefone
+  function limparTelefone(tel) {
+    return tel ? tel.replace(/\D/g, "") : null;
+  }
+
+  // 🔥 telefone principal (regra oficial)
+  function getTelefonePrincipal() {
+    return (
+      limparTelefone(data?.tutor1_telefone) ||
+      limparTelefone(data?.tutor2_telefone)
+    );
+  }
+
   function enviarLocalizacao(telefone) {
+    if (!telefone) {
+      alert("Telefone não disponível");
+      return;
+    }
+
     if (!navigator.geolocation) {
       alert("Seu dispositivo não suporta localização.");
       return;
@@ -62,6 +80,8 @@ export default function PetView() {
 
   if (!data) return <p style={{ textAlign: "center" }}>Carregando...</p>;
 
+  const telefonePrincipal = getTelefonePrincipal();
+
   return (
     <Container>
 
@@ -77,54 +97,57 @@ export default function PetView() {
         <p style={frase}>Estou perdido 😢 Me ajude a voltar pra casa!</p>
       </div>
 
-      {/* TUTOR 1 */}
-      <div style={card}>
-        <p style={label}>TUTOR</p>
-        <h3>{data.tutor1_nome}</h3>
-
-        <div style={botoes}>
-          <a href={`tel:${data.tutor1_telefone}`} style={btnLigar}>
-            📞 Ligar
-          </a>
-
-          <a
-            href={`https://wa.me/55${data.tutor1_telefone}`}
-            target="_blank"
-            style={btnWhats}
-          >
-            💬 WhatsApp
-          </a>
-        </div>
-
-        <button
-          style={btnLocal}
-          onClick={() => enviarLocalizacao(data.tutor1_telefone)}
-        >
-          {loadingLoc ? "Enviando..." : "📍 Enviar localização"}
-        </button>
-      </div>
-
-      {/* TUTOR 2 */}
-      {data.tutor2_telefone && (
+      {/* CONTATO PRINCIPAL */}
+      {telefonePrincipal && (
         <div style={card}>
-          <p style={label}>CONTATO 2</p>
-          <h3>{data.tutor2_nome}</h3>
+          <p style={label}>CONTATO PRINCIPAL</p>
+          <h3>{data.tutor1_nome || data.tutor2_nome || "Responsável"}</h3>
 
           <div style={botoes}>
-            <a href={`tel:${data.tutor2_telefone}`} style={btnLigar}>
+            <a href={`tel:${telefonePrincipal}`} style={btnLigar}>
               📞 Ligar
             </a>
 
             <a
-              href={`https://wa.me/55${data.tutor2_telefone}`}
+              href={`https://wa.me/55${telefonePrincipal}`}
               target="_blank"
               style={btnWhats}
             >
               💬 WhatsApp
             </a>
           </div>
+
+          <button
+            style={btnLocal}
+            onClick={() => enviarLocalizacao(telefonePrincipal)}
+          >
+            {loadingLoc ? "Enviando..." : "📍 Enviar localização"}
+          </button>
         </div>
       )}
+
+      {/* CONTATO 2 (se for diferente do principal) */}
+      {data.tutor2_telefone &&
+        limparTelefone(data.tutor2_telefone) !== telefonePrincipal && (
+          <div style={card}>
+            <p style={label}>CONTATO 2</p>
+            <h3>{data.tutor2_nome}</h3>
+
+            <div style={botoes}>
+              <a href={`tel:${limparTelefone(data.tutor2_telefone)}`} style={btnLigar}>
+                📞 Ligar
+              </a>
+
+              <a
+                href={`https://wa.me/55${limparTelefone(data.tutor2_telefone)}`}
+                target="_blank"
+                style={btnWhats}
+              >
+                💬 WhatsApp
+              </a>
+            </div>
+          </div>
+        )}
 
       {/* OBS */}
       {data.observacoes && (

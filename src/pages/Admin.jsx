@@ -26,11 +26,16 @@ export default function Admin() {
     setLoading(false);
   }
 
-  // STATUS
+  // 🔥 STATUS
   const getStatus = (t) => {
     if (t.locked) return "Cadastrado";
     if (t.name) return "Vinculado";
     return "Disponível";
+  };
+
+  // 🔥 TELEFONE PADRÃO
+  const getTelefone = (t) => {
+    return t.tutor1_telefone || t.tutor2_telefone || "-";
   };
 
   // ✏️ EDITAR
@@ -38,7 +43,7 @@ export default function Admin() {
     window.location.href = `/admin/edit/${tag.code}`;
   }
 
-  // 🧹 LIMPAR (BLOQUEIO SIMPLES)
+  // 🧹 LIMPAR
   async function limpar(tag) {
     if (!confirm("Deseja resetar este QR?")) return;
 
@@ -47,7 +52,6 @@ export default function Admin() {
       .update({
         locked: false,
         name: null,
-        telefone: null,
         tutor1_nome: null,
         tutor1_telefone: null,
         tutor2_nome: null,
@@ -83,7 +87,6 @@ export default function Admin() {
       const link = document.createElement("a");
       link.href = qrDataUrl;
       link.download = `QR_${tag.code}.png`;
-
       link.click();
     } catch (err) {
       alert("Erro ao gerar QR");
@@ -91,29 +94,32 @@ export default function Admin() {
     }
   }
 
-  // 📥 XLS
+  // 📥 EXPORT XLS
   function exportXLS() {
-  const data = tags.map((t) => ({
-    Código: t.code,
-    NFC: `${BASE_URL}/nfc/${t.code}`, // 🔥 NOVO
-    QR: `${BASE_URL}/qr/${t.code}`,   // (renomeei URL pra QR)
-    Nome: t.name || "-",
-    Telefone: t.telefone || "-",
-    Status: getStatus(t),
-    Criado: new Date(t.created_at).toLocaleString(),
-  }));
+    const data = tags.map((t) => ({
+      Código: t.code,
+      NFC: `${BASE_URL}/nfc/${t.code}`,
+      QR: `${BASE_URL}/qr/${t.code}`,
+      Nome: t.name || "-",
 
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Tags");
+      // 🔥 NOVO PADRÃO
+      Telefone: getTelefone(t),
 
-  const buffer = XLSX.write(wb, {
-    bookType: "xlsx",
-    type: "array",
-  });
+      Status: getStatus(t),
+      Criado: new Date(t.created_at).toLocaleString(),
+    }));
 
-  saveAs(new Blob([buffer]), "tags_kydlab.xlsx");
-}
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Tags");
+
+    const buffer = XLSX.write(wb, {
+      bookType: "xlsx",
+      type: "array",
+    });
+
+    saveAs(new Blob([buffer]), "tags_kydlab.xlsx");
+  }
 
   // 🚀 GERAR A3
   async function gerarA3() {
@@ -188,12 +194,13 @@ export default function Admin() {
                 <td>{tag.code}</td>
                 <td>{getStatus(tag)}</td>
                 <td>{tag.name || "-"}</td>
-                <td>{tag.telefone || "-"}</td>
+
+                {/* 🔥 TELEFONE PADRÃO */}
+                <td>{getTelefone(tag)}</td>
 
                 <td>
                   <div style={{ display: "flex", gap: 5 }}>
-                    
-                    {/* ⬇️ QR DOWNLOAD */}
+
                     <button
                       style={{ background: "#555", color: "#fff" }}
                       onClick={() => baixarQR(tag)}
@@ -201,7 +208,6 @@ export default function Admin() {
                       ⬇️ QR
                     </button>
 
-                    {/* ✏️ EDITAR */}
                     <button
                       style={{ background: "#3498db", color: "#fff" }}
                       onClick={() => editar(tag)}
@@ -209,7 +215,6 @@ export default function Admin() {
                       ✏️
                     </button>
 
-                    {/* 🧹 LIMPAR */}
                     <button
                       style={{ background: "#e74c3c", color: "#fff" }}
                       onClick={() => limpar(tag)}
