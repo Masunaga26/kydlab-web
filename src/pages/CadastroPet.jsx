@@ -25,6 +25,7 @@ export default function CadastroPet() {
   }
 
   async function salvar() {
+    // 🔎 verifica se já está bloqueado
     const { data: check } = await supabase
       .from("tags")
       .select("locked")
@@ -36,6 +37,7 @@ export default function CadastroPet() {
       return;
     }
 
+    // 🔎 validação básica
     if (!name || !tutor1Telefone) {
       alert("Preencha os campos obrigatórios");
       return;
@@ -43,6 +45,7 @@ export default function CadastroPet() {
 
     let foto_url = null;
 
+    // 📸 UPLOAD DE FOTO (AGORA COM TRATAMENTO CORRETO)
     if (foto) {
       const fileName = `${code}_${Date.now()}`;
 
@@ -50,21 +53,25 @@ export default function CadastroPet() {
         .from("profile-photos")
         .upload(fileName, foto);
 
-      if (!uploadError) {
-        const { data } = supabase.storage
-          .from("profile-photos")
-          .getPublicUrl(fileName);
-
-        foto_url = data.publicUrl;
+      if (uploadError) {
+        console.log("ERRO UPLOAD:", uploadError);
+        alert("Erro ao enviar imagem");
+        return;
       }
+
+      const { data } = supabase.storage
+        .from("profile-photos")
+        .getPublicUrl(fileName);
+
+      foto_url = data.publicUrl;
     }
 
+    // 💾 UPDATE LIMPO (SEM CAMPO DUPLICADO)
     const { error } = await supabase
       .from("tags")
       .update({
         name,
         tipo: "pet",
-        telefone: tutor1Telefone,
         tutor1_nome: tutor1Nome,
         tutor1_telefone: tutor1Telefone,
         tutor2_nome: tutor2Nome,
@@ -76,11 +83,12 @@ export default function CadastroPet() {
       .eq("code", code);
 
     if (error) {
-  console.log("ERRO SUPABASE:", error);
-  alert(error.message);
-  return;
-}
+      console.log("ERRO SUPABASE:", error);
+      alert(error.message);
+      return;
+    }
 
+    // 🚀 REDIRECIONA
     navigate(`/pet/${code}`);
   }
 
