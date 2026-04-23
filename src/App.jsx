@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // 🔹 Páginas
 import NfcView from "./pages/NfcView";
@@ -17,6 +17,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+
+        {/* 🔥 REDIRECT RAIZ */}
+        <Route path="/" element={<Navigate to="/escolha/TESTE123" />} />
 
         {/* 🔥 ENTRADAS */}
         <Route path="/qr/:code" element={<QrRedirect />} />
