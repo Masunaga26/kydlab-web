@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Container from "../components/Container";
+import imageCompression from "browser-image-compression"; // 🔥 NOVO
 
 export default function CadastroPessoa() {
   const { code } = useParams();
@@ -20,17 +21,32 @@ export default function CadastroPessoa() {
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // 🔥 limpar telefone
+  // 🔥 LIMPAR TELEFONE
   function limparTelefone(tel) {
     return tel.replace(/\D/g, "");
   }
 
-  function handleFoto(e) {
+  // 🔥 COMPRESSÃO DE IMAGEM
+  async function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    setFoto(file);
-    setPreview(URL.createObjectURL(file));
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+      };
+
+      const compressedFile = await imageCompression(file, options);
+
+      setFoto(compressedFile);
+      setPreview(URL.createObjectURL(compressedFile));
+
+    } catch (error) {
+      alert("Erro ao processar imagem");
+      console.error(error);
+    }
   }
 
   async function salvar() {
@@ -47,12 +63,6 @@ export default function CadastroPessoa() {
 
     if (!name || !contato1Telefone) {
       alert("Preencha os campos obrigatórios");
-      return;
-    }
-
-    // 🔥 validar tamanho da imagem
-    if (foto && foto.size > 3 * 1024 * 1024) {
-      alert("Imagem muito grande (máx 3MB)");
       return;
     }
 
@@ -81,9 +91,10 @@ export default function CadastroPessoa() {
         data_nascimento: dataNascimento,
         tipo: "pessoa",
 
-        
+        // 🔥 PADRÃO NOVO (SEM TELEFONE ANTIGO)
         tutor1_nome: contato1Nome,
         tutor1_telefone: limparTelefone(contato1Telefone),
+
         tutor2_nome: contato2Nome,
         tutor2_telefone: limparTelefone(contato2Telefone),
 
@@ -137,7 +148,6 @@ export default function CadastroPessoa() {
           onChange={(e) => setName(e.target.value)}
         />
 
-        {/* 🔥 DATA COM LABEL */}
         <div>
           <label style={label}>📅 Data de nascimento</label>
           <input
@@ -153,7 +163,11 @@ export default function CadastroPessoa() {
       <div style={card}>
         <h3>🩸 Saúde</h3>
 
-        <select style={input} value={tipoSanguineo} onChange={(e) => setTipoSanguineo(e.target.value)}>
+        <select
+          style={input}
+          value={tipoSanguineo}
+          onChange={(e) => setTipoSanguineo(e.target.value)}
+        >
           <option value="">Tipo sanguíneo</option>
           <option>O+</option><option>O-</option>
           <option>A+</option><option>A-</option>
