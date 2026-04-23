@@ -76,9 +76,10 @@ export default function CadastroPet() {
       .eq("code", code);
 
     if (error) {
-      alert("Erro ao salvar");
-      return;
-    }
+  console.log("ERRO SUPABASE:", error);
+  alert(error.message);
+  return;
+}
 
     navigate(`/pet/${code}`);
   }
