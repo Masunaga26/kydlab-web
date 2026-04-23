@@ -84,9 +84,10 @@ export default function CadastroPessoa() {
       .eq("code", code);
 
     if (error) {
-      alert("Erro ao salvar");
-      return;
-    }
+  console.log("ERRO SUPABASE:", error);
+  alert(error.message);
+  return;
+}
 
     navigate(`/pessoa/${code}`);
   }
