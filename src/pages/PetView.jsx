@@ -13,24 +13,31 @@ export default function PetView() {
   }, []);
 
   async function carregar() {
-    const { data } = await supabase
-      .from("tags")
-      .select("*")
-      .eq("code", code)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("tags")
+        .select("*")
+        .eq("code", code)
+        .single();
 
-    if (!data) {
-      alert("Código inválido");
+      if (error || !data) {
+        alert("Código inválido");
+        window.location.href = "/";
+        return;
+      }
+
+      if (!data.locked) {
+        window.location.href = `/escolha/${code}`;
+        return;
+      }
+
+      setData(data);
+
+    } catch (err) {
+      console.error("Erro ao carregar PetView:", err);
+      alert("Erro ao carregar dados");
       window.location.href = "/";
-      return;
     }
-
-    if (!data.locked) {
-      window.location.href = `/escolha/${code}`;
-      return;
-    }
-
-    setData(data);
   }
 
   // 🔥 TELEFONE LIMPO
@@ -38,20 +45,21 @@ export default function PetView() {
     return (tel || "").replace(/\D/g, "");
   }
 
-  // 🔥 TELEFONE PRINCIPAL
-  function getTelefonePrincipal() {
-    const t1 = limparTelefone(data?.tutor1_telefone);
-    const t2 = limparTelefone(data?.tutor2_telefone);
-
-    if (t1.length >= 10) return t1;
-    if (t2.length >= 10) return t2;
-
-    return null;
-  }
+  // 🔥 TELEFONES NORMALIZADOS
+  const telefone1 = limparTelefone(data?.tutor1_telefone);
+  const telefone2 = limparTelefone(data?.tutor2_telefone);
 
   function telefoneValido(tel) {
     return tel && tel.length >= 10;
   }
+
+  // 🔥 TELEFONE PRINCIPAL
+  const telefonePrincipal =
+    telefoneValido(telefone1)
+      ? telefone1
+      : telefoneValido(telefone2)
+      ? telefone2
+      : null;
 
   function enviarLocalizacao(telefone) {
     if (!telefoneValido(telefone)) {
@@ -86,8 +94,6 @@ export default function PetView() {
   }
 
   if (!data) return <p style={{ textAlign: "center" }}>Carregando...</p>;
-
-  const telefonePrincipal = getTelefonePrincipal();
 
   return (
     <Container>
@@ -141,22 +147,19 @@ export default function PetView() {
       )}
 
       {/* CONTATO 2 */}
-      {telefoneValido(data?.tutor2_telefone) &&
-        limparTelefone(data.tutor2_telefone) !== telefonePrincipal && (
+      {telefoneValido(telefone2) &&
+        telefone2 !== telefonePrincipal && (
           <div style={card}>
             <p style={label}>CONTATO 2</p>
             <h3>{data.tutor2_nome}</h3>
 
             <div style={botoes}>
-              <a
-                href={`tel:${limparTelefone(data.tutor2_telefone)}`}
-                style={btnLigar}
-              >
+              <a href={`tel:${telefone2}`} style={btnLigar}>
                 📞 Ligar
               </a>
 
               <a
-                href={`https://wa.me/55${limparTelefone(data.tutor2_telefone)}`}
+                href={`https://wa.me/55${telefone2}`}
                 target="_blank"
                 style={btnWhats}
               >

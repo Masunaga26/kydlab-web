@@ -1,49 +1,56 @@
 import { useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Container from "../components/Container";
 
 export default function QrRedirect() {
   const { code } = useParams();
-  const navigate = useNavigate();
 
   useEffect(() => {
     verificar();
   }, []);
 
   async function verificar() {
-    const { data } = await supabase
-      .from("tags")
-      .select("*")
-      .eq("code", code)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("tags")
+        .select("*")
+        .eq("code", code)
+        .single();
 
-    if (!data) {
-      alert("Código inválido");
-      return;
-    }
-
-    // 🔴 BLOQUEADO (já cadastrado)
-    if (data.locked) {
-      if (data.tipo === "pet") {
-        navigate(`/pet/${code}`);
-      } else {
-        navigate(`/pessoa/${code}`);
+      if (error || !data) {
+        alert("Código inválido");
+        window.location.href = "/";
+        return;
       }
-      return;
-    }
 
-    // 🟡 SEM TIPO → escolha
-    if (!data.tipo) {
-      navigate(`/escolha/${code}`);
-      return;
-    }
+      // 🔴 JÁ CADASTRADO
+      if (data.locked) {
+        if (data.tipo === "pet") {
+          window.location.href = `/pet/${code}`;
+        } else {
+          window.location.href = `/pessoa/${code}`;
+        }
+        return;
+      }
 
-    // 🟢 IR DIRETO PRO CADASTRO
-    if (data.tipo === "pet") {
-      navigate(`/cadastro/pet/${code}`);
-    } else {
-      navigate(`/cadastro/pessoa/${code}`);
+      // 🟡 SEM TIPO → escolha
+      if (!data.tipo) {
+        window.location.href = `/escolha/${code}`;
+        return;
+      }
+
+      // 🟢 IR DIRETO PRO CADASTRO
+      if (data.tipo === "pet") {
+        window.location.href = `/cadastro/pet/${code}`;
+      } else {
+        window.location.href = `/cadastro/pessoa/${code}`;
+      }
+
+    } catch (err) {
+      console.error("Erro no QR Redirect:", err);
+      alert("Erro ao carregar. Tente novamente.");
+      window.location.href = "/";
     }
   }
 
@@ -78,7 +85,6 @@ const texto = {
   color: "#777"
 };
 
-/* loader simples */
 const loader = {
   width: 40,
   height: 40,
