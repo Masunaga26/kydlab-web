@@ -119,7 +119,7 @@ export default function CadastroPessoa() {
   return (
     <Container>
 
-      <div style={header}>
+      <div style={{}}>
         <h2>👤 Cadastro de Pessoa</h2>
         <p style={subtitle}>Identificação • {code}</p>
       </div>
@@ -196,6 +196,85 @@ export default function CadastroPessoa() {
 
     </Container>
   );
+const header = {
+  textAlign: "center",
+  marginBottom: 20
+};
+
+const subtitle = {
+  fontSize: 12,
+  color: "#777"
+};
+
+const card = {
+  background: "#fff",
+  padding: 15,
+  borderRadius: 15,
+  marginBottom: 15,
+  boxShadow: "0 4px 15px rgba(0,0,0,0.08)"
+};
+
+const fotoCircle = {
+  width: 120,
+  height: 120,
+  borderRadius: "50%",
+  background: "#ffeaea",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  margin: "0 auto 10px auto",
+  cursor: "pointer"
+};
+
+const fotoTexto = {
+  color: "#ff3b3b",
+  fontWeight: 600
+};
+
+const imgCircle = {
+  width: "100%",
+  height: "100%",
+  borderRadius: "50%",
+  objectFit: "cover"
+};
+
+const input = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 10,
+  border: "1px solid #ddd",
+  fontSize: 14,
+  marginTop: 5
+};
+
+const label = {
+  fontSize: 13,
+  color: "#555",
+  marginTop: 10,
+  display: "block"
+};
+
+const alerta = {
+  background: "#fff5f5",
+  border: "1px solid #ffb3b3",
+  padding: 12,
+  borderRadius: 10,
+  fontSize: 13,
+  marginBottom: 15,
+  textAlign: "center"
+};
+
+const botao = {
+  width: "100%",
+  padding: 16,
+  background: "#ff2d2d",
+  color: "#fff",
+  border: "none",
+  borderRadius: 12,
+  fontSize: 16,
+  fontWeight: "bold"
+};
 }
 
 /* mantém seus estilos iguais */
