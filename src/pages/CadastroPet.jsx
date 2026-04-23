@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Container from "../components/Container";
+import imageCompression from "browser-image-compression"; // 🔥 NOVO
 
 export default function CadastroPet() {
   const { code } = useParams();
@@ -21,12 +22,27 @@ export default function CadastroPet() {
     return tel.replace(/\D/g, "");
   }
 
-  function handleFoto(e) {
+  // 🔥 NOVO HANDLE COM COMPRESSÃO
+  async function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    setFoto(file);
-    setPreview(URL.createObjectURL(file));
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+      };
+
+      const compressedFile = await imageCompression(file, options);
+
+      setFoto(compressedFile);
+      setPreview(URL.createObjectURL(compressedFile));
+
+    } catch (error) {
+      alert("Erro ao processar imagem");
+      console.error(error);
+    }
   }
 
   async function salvar() {
@@ -43,12 +59,6 @@ export default function CadastroPet() {
 
     if (!name || !tutor1Telefone) {
       alert("Preencha os campos obrigatórios");
-      return;
-    }
-
-    // 🔥 VALIDAR TAMANHO DA IMAGEM
-    if (foto && foto.size > 3 * 1024 * 1024) {
-      alert("Imagem muito grande (máx 3MB)");
       return;
     }
 
@@ -76,10 +86,9 @@ export default function CadastroPet() {
         name,
         tipo: "pet",
 
-        // 🔥 TELEFONES LIMPOS
-        telefone: limparTelefone(tutor1Telefone),
         tutor1_nome: tutor1Nome,
         tutor1_telefone: limparTelefone(tutor1Telefone),
+
         tutor2_nome: tutor2Nome,
         tutor2_telefone: limparTelefone(tutor2Telefone),
 

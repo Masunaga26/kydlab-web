@@ -17,10 +17,15 @@ export default function Admin() {
   }, []);
 
   async function fetchData() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("tags")
       .select("*")
       .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Erro ao buscar tags:", error);
+      return;
+    }
 
     setTags(data || []);
     setLoading(false);
@@ -33,7 +38,7 @@ export default function Admin() {
     return "Disponível";
   };
 
-  // 🔥 TELEFONE PADRÃO
+  // 🔥 TELEFONE PADRÃO (SEM DEPENDER DE COLUNA ANTIGA)
   const getTelefone = (t) => {
     return t.tutor1_telefone || t.tutor2_telefone || "-";
   };
@@ -43,7 +48,7 @@ export default function Admin() {
     window.location.href = `/admin/edit/${tag.code}`;
   }
 
-  // 🧹 LIMPAR
+  // 🧹 LIMPAR (100% LIMPO — SEM COLUNA telefone)
   async function limpar(tag) {
     if (!confirm("Deseja resetar este QR?")) return;
 
@@ -52,10 +57,13 @@ export default function Admin() {
       .update({
         locked: false,
         name: null,
+
         tutor1_nome: null,
         tutor1_telefone: null,
+
         tutor2_nome: null,
         tutor2_telefone: null,
+
         foto_url: null,
         tipo: null,
         tipo_sanguineo: null,
@@ -94,7 +102,7 @@ export default function Admin() {
     }
   }
 
-  // 📥 EXPORT XLS
+  // 📥 EXPORT XLS (SEM telefone antigo)
   function exportXLS() {
     const data = tags.map((t) => ({
       Código: t.code,
@@ -135,6 +143,7 @@ export default function Admin() {
 
     if (error) {
       alert("Erro ao gerar lote");
+      console.error(error);
       return;
     }
 
@@ -200,7 +209,7 @@ export default function Admin() {
 
                 <td>
                   <div style={{ display: "flex", gap: 5 }}>
-
+                    
                     <button
                       style={{ background: "#555", color: "#fff" }}
                       onClick={() => baixarQR(tag)}

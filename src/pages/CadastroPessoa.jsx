@@ -81,7 +81,7 @@ export default function CadastroPessoa() {
         data_nascimento: dataNascimento,
         tipo: "pessoa",
 
-        telefone: limparTelefone(contato1Telefone),
+        
         tutor1_nome: contato1Nome,
         tutor1_telefone: limparTelefone(contato1Telefone),
         tutor2_nome: contato2Nome,
