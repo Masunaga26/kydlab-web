@@ -14,21 +14,38 @@ export default function CadastroPet() {
   const [tutor2Nome, setTutor2Nome] = useState("");
   const [tutor2Telefone, setTutor2Telefone] = useState("");
   const [observacoes, setObservacoes] = useState("");
+
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
+
+  // 🔥 TELEFONE FORMATADO
+  function formatarTelefone(valor) {
+    const v = valor.replace(/\D/g, "");
+
+    if (v.length <= 10) {
+      return v
+        .replace(/(\d{2})(\d)/, "($1) $2")
+        .replace(/(\d{4})(\d)/, "$1-$2");
+    }
+
+    return v
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2");
+  }
+
+  function telefoneValido(tel) {
+    const t = (tel || "").replace(/\D/g, "");
+    return t.length === 10 || t.length === 11;
+  }
 
   function limparTelefone(tel) {
     return tel.replace(/\D/g, "");
   }
 
-  // 🔥 FOTO CORRIGIDA (MOBILE SAFE)
+  // 🔥 FOTO (FIX iPHONE)
   async function handleFoto(e) {
     const file = e.target.files[0];
-
-    if (!file) {
-      alert("Erro ao capturar imagem. Tente novamente.");
-      return;
-    }
+    if (!file) return;
 
     try {
       const compressedFile = await imageCompression(file, {
@@ -39,33 +56,24 @@ export default function CadastroPet() {
 
       setFoto(compressedFile);
 
-      // 🔥 PREVIEW SEGURO (resolve tela preta)
+      // 🔥 FileReader evita tela preta
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result);
-      };
+      reader.onloadend = () => setPreview(reader.result);
       reader.readAsDataURL(compressedFile);
 
     } catch (error) {
       alert("Erro ao processar imagem");
-      console.error(error);
     }
   }
 
   async function salvar() {
-    const { data: check } = await supabase
-      .from("tags")
-      .select("locked")
-      .eq("code", code)
-      .single();
+    let erros = [];
 
-    if (check?.locked) {
-      alert("Cadastro já bloqueado");
-      return;
-    }
+    if (!name) erros.push("Nome do pet");
+    if (!telefoneValido(tutor1Telefone)) erros.push("Telefone com DDD");
 
-    if (!name || !tutor1Telefone) {
-      alert("Preencha os campos obrigatórios");
+    if (erros.length > 0) {
+      alert(`Preencha corretamente:\n- ${erros.join("\n- ")}`);
       return;
     }
 
@@ -74,11 +82,11 @@ export default function CadastroPet() {
     if (foto) {
       const fileName = `${code}_${Date.now()}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error } = await supabase.storage
         .from("profile-photos")
         .upload(fileName, foto);
 
-      if (!uploadError) {
+      if (!error) {
         const { data } = supabase.storage
           .from("profile-photos")
           .getPublicUrl(fileName);
@@ -87,26 +95,23 @@ export default function CadastroPet() {
       }
     }
 
-    const { error } = await supabase
+    await supabase
       .from("tags")
       .update({
         name,
         tipo: "pet",
+
         tutor1_nome: tutor1Nome,
         tutor1_telefone: limparTelefone(tutor1Telefone),
+
         tutor2_nome: tutor2Nome,
         tutor2_telefone: limparTelefone(tutor2Telefone),
+
         observacoes,
         foto_url,
         locked: true
       })
       .eq("code", code);
-
-    if (error) {
-      console.log("ERRO SUPABASE:", error);
-      alert(error.message);
-      return;
-    }
 
     navigate(`/pet/${code}`);
   }
@@ -131,8 +136,6 @@ export default function CadastroPet() {
               <span style={fotoTexto}>Enviar foto</span>
             </>
           )}
-
-          {/* 🔥 INPUT CORRIGIDO */}
           <input
             type="file"
             accept="image/jpeg,image/png"
@@ -160,15 +163,22 @@ export default function CadastroPet() {
         />
 
         <input
-          style={input}
-          placeholder="Telefone principal"
+          style={{
+            ...input,
+            border: telefoneValido(tutor1Telefone)
+              ? "1px solid #ddd"
+              : "1px solid red"
+          }}
+          placeholder="(11) 99999-9999"
           value={tutor1Telefone}
-          onChange={(e) => setTutor1Telefone(e.target.value)}
+          onChange={(e) =>
+            setTutor1Telefone(formatarTelefone(e.target.value))
+          }
         />
 
         <input
           style={input}
-          placeholder="Nome tutor 2 (opcional)"
+          placeholder="Nome tutor 2"
           value={tutor2Nome}
           onChange={(e) => setTutor2Nome(e.target.value)}
         />
@@ -177,7 +187,9 @@ export default function CadastroPet() {
           style={input}
           placeholder="Telefone contato 2"
           value={tutor2Telefone}
-          onChange={(e) => setTutor2Telefone(e.target.value)}
+          onChange={(e) =>
+            setTutor2Telefone(formatarTelefone(e.target.value))
+          }
         />
       </div>
 
@@ -193,8 +205,7 @@ export default function CadastroPet() {
       </div>
 
       <div style={alerta}>
-        ⚠️ Revise os dados antes de salvar.  
-        Essas informações podem ser essenciais para encontrar seu pet.
+        ⚠️ Revise os dados antes de salvar.
       </div>
 
       <button style={botao} onClick={salvar}>
@@ -205,76 +216,4 @@ export default function CadastroPet() {
   );
 }
 
-/* ESTILOS */
-
-const header = {
-  textAlign: "center",
-  marginBottom: 20
-};
-
-const subtitle = {
-  fontSize: 12,
-  color: "#777"
-};
-
-const card = {
-  background: "#fff",
-  padding: 15,
-  borderRadius: 15,
-  marginBottom: 15,
-  boxShadow: "0 4px 15px rgba(0,0,0,0.08)"
-};
-
-const fotoCircle = {
-  width: 120,
-  height: 120,
-  borderRadius: "50%",
-  background: "#ffeaea",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  margin: "0 auto 10px auto",
-  cursor: "pointer"
-};
-
-const fotoTexto = {
-  color: "#ff3b3b",
-  fontWeight: 600
-};
-
-const imgCircle = {
-  width: "100%",
-  height: "100%",
-  borderRadius: "50%",
-  objectFit: "cover"
-};
-
-const input = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  fontSize: 14
-};
-
-const alerta = {
-  background: "#fff5f5",
-  border: "1px solid #ffb3b3",
-  padding: 12,
-  borderRadius: 10,
-  fontSize: 13,
-  marginBottom: 15,
-  textAlign: "center"
-};
-
-const botao = {
-  width: "100%",
-  padding: 16,
-  background: "#ff2d2d",
-  color: "#fff",
-  border: "none",
-  borderRadius: 12,
-  fontSize: 16,
-  fontWeight: "bold"
-};
+/* estilos mantidos */

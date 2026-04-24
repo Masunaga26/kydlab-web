@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import Container from "../components/Container";
 
 export default function QrRedirect() {
   const { code } = useParams();
@@ -19,78 +18,42 @@ export default function QrRedirect() {
         .single();
 
       if (error || !data) {
-        alert("Código inválido");
-        window.location.href = "/";
+        window.location.replace("/");
         return;
       }
 
-      // 🔴 JÁ CADASTRADO
-      if (data.locked) {
+      // 🔴 SEM TIPO → ESCOLHA
+      if (!data.tipo) {
+        window.location.replace(`/escolha/${code}`);
+        return;
+      }
+
+      // 🟡 TEM TIPO MAS NÃO CADASTRADO
+      if (!data.locked) {
         if (data.tipo === "pet") {
-          window.location.href = `/pet/${code}`;
+          window.location.replace(`/cadastro/pet/${code}`);
         } else {
-          window.location.href = `/pessoa/${code}`;
+          window.location.replace(`/cadastro/pessoa/${code}`);
         }
         return;
       }
 
-      // 🟡 SEM TIPO → escolha
-      if (!data.tipo) {
-        window.location.href = `/escolha/${code}`;
-        return;
-      }
-
-      // 🟢 IR DIRETO PRO CADASTRO
+      // 🟢 CADASTRADO → VIEW
       if (data.tipo === "pet") {
-        window.location.href = `/cadastro/pet/${code}`;
+        window.location.replace(`/pet/${code}`);
       } else {
-        window.location.href = `/cadastro/pessoa/${code}`;
+        window.location.replace(`/pessoa/${code}`);
       }
 
     } catch (err) {
-      console.error("Erro no QR Redirect:", err);
-      alert("Erro ao carregar. Tente novamente.");
-      window.location.href = "/";
+      console.error("Erro QR:", err);
+      window.location.replace("/");
     }
   }
 
   return (
-    <Container>
-      <div style={box}>
-        <div style={logo}>🔴 KYD LAB</div>
-
-        <div style={loader}></div>
-
-        <p style={texto}>Carregando informações...</p>
-      </div>
-    </Container>
+    <div style={{ textAlign: "center", marginTop: 80 }}>
+      <p>Carregando...</p>
+    </div>
   );
 }
-
-/* ===== ESTILOS ===== */
-
-const box = {
-  textAlign: "center",
-  marginTop: 80
-};
-
-const logo = {
-  fontWeight: "bold",
-  fontSize: 18,
-  marginBottom: 20
-};
-
-const texto = {
-  marginTop: 20,
-  color: "#777"
-};
-
-const loader = {
-  width: 40,
-  height: 40,
-  border: "4px solid #eee",
-  borderTop: "4px solid #ff2d2d",
-  borderRadius: "50%",
-  margin: "0 auto",
-  animation: "spin 1s linear infinite"
-};

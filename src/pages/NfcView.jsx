@@ -31,16 +31,22 @@ export default function NfcView() {
         return;
       }
 
-      // 🔥 ATIVADO → REDIRECIONA DIRETO (SEM BUG)
       setStatus("redirecionando");
 
-      const destino =
-        data.tipo === "pet"
-          ? `/pet/${code}`
-          : `/pessoa/${code}`;
+      // 🔥 DEFINIÇÃO SEGURA DE DESTINO
+      let destino = `/escolha/${code}`;
 
-      // 🚀 REDIRECT ROBUSTO (NFC SAFE)
-      window.location.href = destino;
+      if (data.tipo === "pet") {
+        destino = `/pet/${code}`;
+      } else if (data.tipo === "pessoa") {
+        destino = `/pessoa/${code}`;
+      }
+
+      // 🔥 DELAY PEQUENO (melhora compatibilidade NFC/iPhone)
+      setTimeout(() => {
+        // 🔥 replace evita histórico quebrado
+        window.location.replace(destino);
+      }, 300);
 
     } catch (err) {
       console.error("Erro NFC:", err);
