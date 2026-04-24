@@ -36,9 +36,13 @@ export default function CadastroPessoa() {
     return date.toISOString().split("T")[0];
   }
 
+  // 🔥 FOTO CORRIGIDA (MOBILE SAFE)
   async function handleFoto(e) {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) {
+      alert("Erro ao capturar imagem. Tente novamente.");
+      return;
+    }
 
     try {
       const compressed = await imageCompression(file, {
@@ -48,9 +52,17 @@ export default function CadastroPessoa() {
       });
 
       setFoto(compressed);
-      setPreview(URL.createObjectURL(compressed));
+
+      // 🔥 USAR FileReader (resolve tela preta)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(compressed);
+
     } catch (err) {
       alert("Erro ao processar imagem");
+      console.error(err);
     }
   }
 
@@ -136,7 +148,14 @@ export default function CadastroPessoa() {
               <span style={fotoTexto}>Enviar foto</span>
             </>
           )}
-          <input type="file" onChange={handleFoto} hidden />
+
+          {/* 🔥 INPUT AJUSTADO */}
+          <input
+            type="file"
+            accept="image/jpeg,image/png"
+            onChange={handleFoto}
+            hidden
+          />
         </label>
 
         <input
@@ -195,7 +214,7 @@ export default function CadastroPessoa() {
   );
 }
 
-/* 🔥 AGORA FORA DO COMPONENTE */
+/* ESTILOS */
 
 const header = {
   textAlign: "center",

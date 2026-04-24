@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Container from "../components/Container";
-import imageCompression from "browser-image-compression"; // 🔥 NOVO
+import imageCompression from "browser-image-compression";
 
 export default function CadastroPet() {
   const { code } = useParams();
@@ -17,27 +17,34 @@ export default function CadastroPet() {
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // 🔥 LIMPAR TELEFONE
   function limparTelefone(tel) {
     return tel.replace(/\D/g, "");
   }
 
-  // 🔥 NOVO HANDLE COM COMPRESSÃO
+  // 🔥 FOTO CORRIGIDA (MOBILE SAFE)
   async function handleFoto(e) {
     const file = e.target.files[0];
-    if (!file) return;
+
+    if (!file) {
+      alert("Erro ao capturar imagem. Tente novamente.");
+      return;
+    }
 
     try {
-      const options = {
+      const compressedFile = await imageCompression(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 1024,
         useWebWorker: true,
-      };
-
-      const compressedFile = await imageCompression(file, options);
+      });
 
       setFoto(compressedFile);
-      setPreview(URL.createObjectURL(compressedFile));
+
+      // 🔥 PREVIEW SEGURO (resolve tela preta)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(compressedFile);
 
     } catch (error) {
       alert("Erro ao processar imagem");
@@ -85,13 +92,10 @@ export default function CadastroPet() {
       .update({
         name,
         tipo: "pet",
-
         tutor1_nome: tutor1Nome,
         tutor1_telefone: limparTelefone(tutor1Telefone),
-
         tutor2_nome: tutor2Nome,
         tutor2_telefone: limparTelefone(tutor2Telefone),
-
         observacoes,
         foto_url,
         locked: true
@@ -110,13 +114,11 @@ export default function CadastroPet() {
   return (
     <Container>
 
-      {/* HEADER */}
       <div style={header}>
         <h2>🐶 Cadastro do Pet</h2>
         <p style={subtitle}>Identificação • {code}</p>
       </div>
 
-      {/* FOTO */}
       <div style={card}>
         <h3>📸 Foto</h3>
 
@@ -129,7 +131,14 @@ export default function CadastroPet() {
               <span style={fotoTexto}>Enviar foto</span>
             </>
           )}
-          <input type="file" onChange={handleFoto} hidden />
+
+          {/* 🔥 INPUT CORRIGIDO */}
+          <input
+            type="file"
+            accept="image/jpeg,image/png"
+            onChange={handleFoto}
+            hidden
+          />
         </label>
 
         <input
@@ -140,7 +149,6 @@ export default function CadastroPet() {
         />
       </div>
 
-      {/* TUTORES */}
       <div style={card}>
         <h3>📞 Tutores</h3>
 
@@ -173,7 +181,6 @@ export default function CadastroPet() {
         />
       </div>
 
-      {/* OBS */}
       <div style={card}>
         <h3>📝 Observações</h3>
 
@@ -185,13 +192,11 @@ export default function CadastroPet() {
         />
       </div>
 
-      {/* ALERTA */}
       <div style={alerta}>
         ⚠️ Revise os dados antes de salvar.  
         Essas informações podem ser essenciais para encontrar seu pet.
       </div>
 
-      {/* BOTÃO */}
       <button style={botao} onClick={salvar}>
         💾 Salvar Cadastro
       </button>
@@ -200,7 +205,7 @@ export default function CadastroPet() {
   );
 }
 
-/* ===== ESTILOS ===== */
+/* ESTILOS */
 
 const header = {
   textAlign: "center",
