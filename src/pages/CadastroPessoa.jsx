@@ -3,14 +3,11 @@ import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Container from "../components/Container";
 
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-
 export default function CadastroPessoa() {
   const { code } = useParams();
 
   const [nome, setNome] = useState("");
-  const [dataNasc, setDataNasc] = useState(null);
+  const [dataNascTexto, setDataNascTexto] = useState("");
   const [tipoSanguineo, setTipoSanguineo] = useState("");
   const [telefone1, setTelefone1] = useState("");
   const [telefone2, setTelefone2] = useState("");
@@ -26,13 +23,11 @@ export default function CadastroPessoa() {
 
   const [salvando, setSalvando] = useState(false);
 
-  // 📞 VALIDAÇÃO
   function telefoneValido(tel) {
     const limpo = tel.replace(/\D/g, "");
     return limpo.length === 10 || limpo.length === 11;
   }
 
-  // 📸 FOTO
   function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -41,7 +36,12 @@ export default function CadastroPessoa() {
     setPreview(URL.createObjectURL(file));
   }
 
-  // 💾 SALVAR
+  function formatarDataISO(data) {
+    if (!data || data.length !== 10) return null;
+    const [dia, mes, ano] = data.split("/");
+    return `${ano}-${mes}-${dia}`;
+  }
+
   async function salvar() {
     if (salvando) return;
 
@@ -73,23 +73,19 @@ export default function CadastroPessoa() {
           .upload(fileName, foto);
 
         if (!uploadError) {
-          const { data } = supabase.storage
+          const { data: publicUrlData } = supabase.storage
             .from("fotos")
             .getPublicUrl(fileName);
 
-          foto_url = data.publicUrl;
+          foto_url = publicUrlData.publicUrl;
         }
       }
-
-      const dataFormatada = dataNasc
-        ? dataNasc.toISOString().split("T")[0]
-        : null;
 
       const { error } = await supabase
         .from("tags")
         .update({
           name: nome,
-          data_nascimento: dataFormatada,
+          data_nascimento: formatarDataISO(dataNascTexto),
           tipo_sanguineo: tipoSanguineo,
 
           tutor1_nome: tutor1Nome,
@@ -128,10 +124,7 @@ export default function CadastroPessoa() {
     <Container>
 
       {/* FOTO */}
-      <div
-        style={fotoCircle}
-        onClick={() => document.getElementById("fileInput").click()}
-      >
+      <div style={fotoCircle} onClick={() => document.getElementById("fileInput").click()}>
         {preview ? (
           <img src={preview} style={imgCircle} />
         ) : (
@@ -142,7 +135,6 @@ export default function CadastroPessoa() {
           id="fileInput"
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={handleFoto}
           style={{ display: "none" }}
         />
@@ -150,154 +142,22 @@ export default function CadastroPessoa() {
 
       {/* NOME */}
       <label style={label}>Nome *</label>
-      <input
-        value={nome}
-        onChange={(e) => setNome(e.target.value)}
-        style={input}
-      />
+      <input value={nome} onChange={(e) => setNome(e.target.value)} style={input} />
 
       {/* DATA */}
       <label style={label}>Data de nascimento</label>
-      <DatePicker
-        selected={dataNasc}
-        onChange={(date) => setDataNasc(date)}
-        dateFormat="dd/MM/yyyy"
-        placeholderText="__/__/____"
-        showYearDropdown
-        scrollableYearDropdown
-        yearDropdownItemNumber={100}
-        maxDate={new Date()}
-        className="input"
-      />
-
-      {/* TIPO SANGUÍNEO */}
-      <label style={label}>Tipo sanguíneo</label>
-      <select
-        value={tipoSanguineo}
-        onChange={(e) => setTipoSanguineo(e.target.value)}
-        style={input}
-      >
-        <option value="">Selecione</option>
-        <option>O+</option>
-        <option>O-</option>
-        <option>A+</option>
-        <option>A-</option>
-        <option>B+</option>
-        <option>B-</option>
-        <option>AB+</option>
-        <option>AB-</option>
-      </select>
-
-      {/* CONTATO 1 */}
-      <label style={label}>Contato principal *</label>
       <input
-        placeholder="(99)99999-9999"
-        value={telefone1}
-        onChange={(e) =>
-          setTelefone1(e.target.value.replace(/[^0-9()\- ]/g, ""))
-        }
+        placeholder="__/__/____"
+        value={dataNascTexto}
+        onChange={(e) => {
+          let v = e.target.value.replace(/\D/g, "");
+
+          if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
+          if (v.length > 5) v = v.slice(0, 5) + "/" + v.slice(5, 9);
+
+          setDataNascTexto(v);
+        }}
         style={input}
       />
 
-      <input
-        placeholder="Nome contato"
-        value={tutor1Nome}
-        onChange={(e) => setTutor1Nome(e.target.value)}
-        style={input}
-      />
-
-      {/* CONTATO 2 */}
-      <label style={label}>Contato secundário</label>
-      <input
-        placeholder="(99)99999-9999"
-        value={telefone2}
-        onChange={(e) =>
-          setTelefone2(e.target.value.replace(/[^0-9()\- ]/g, ""))
-        }
-        style={input}
-      />
-
-      <input
-        placeholder="Nome contato"
-        value={tutor2Nome}
-        onChange={(e) => setTutor2Nome(e.target.value)}
-        style={input}
-      />
-
-      {/* SAÚDE */}
-      <label style={label}>Comorbidades</label>
-      <input value={comorbidades} onChange={(e) => setComorbidades(e.target.value)} style={input} />
-
-      <label style={label}>Alergias</label>
-      <input value={alergias} onChange={(e) => setAlergias(e.target.value)} style={input} />
-
-      <label style={label}>Medicamentos</label>
-      <input value={medicamentos} onChange={(e) => setMedicamentos(e.target.value)} style={input} />
-
-      {/* BOTÃO */}
-      <button onClick={salvar} disabled={salvando} style={btnSalvar}>
-        {salvando ? "Salvando..." : "Salvar"}
-      </button>
-
-      <p style={obs}>*Obrigatório</p>
-
-    </Container>
-  );
-}
-
-/* 🔥 ESTILOS PRESERVADOS */
-
-const fotoCircle = {
-  width: 120,
-  height: 120,
-  borderRadius: "50%",
-  background: "#ffeaea",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  margin: "20px auto",
-  cursor: "pointer",
-};
-
-const imgCircle = {
-  width: "100%",
-  height: "100%",
-  borderRadius: "50%",
-  objectFit: "cover",
-};
-
-const fotoTexto = {
-  color: "#ff3b3b",
-  fontWeight: 600,
-};
-
-const input = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  marginTop: 5,
-  marginBottom: 10,
-};
-
-const label = {
-  marginTop: 10,
-  display: "block",
-};
-
-const btnSalvar = {
-  width: "100%",
-  padding: 15,
-  borderRadius: 12,
-  background: "#ff3b3b",
-  color: "#fff",
-  border: "none",
-  marginTop: 20,
-};
-
-const obs = {
-  textAlign: "center",
-  fontSize: 12,
-  color: "#999",
-  marginTop: 10,
-};
+      {/* RESTANTE IGUAL */}

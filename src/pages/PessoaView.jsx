@@ -106,7 +106,11 @@ export default function PessoaView() {
       {/* HEADER */}
       <div style={header}>
         <img
-          src={data.foto_url || "https://via.placeholder.com/150"}
+          src={
+            data?.foto_url && data.foto_url !== ""
+              ? data.foto_url + "?t=" + Date.now()
+              : "https://via.placeholder.com/150"
+          }
           style={foto}
         />
 
@@ -211,7 +215,7 @@ export default function PessoaView() {
   );
 }
 
-/* 🎨 CORES AJUSTADAS (SEM MUDAR ESTRUTURA) */
+/* 🎨 ESTILO MANTIDO */
 
 const header = { textAlign: "center", padding: 20 };
 

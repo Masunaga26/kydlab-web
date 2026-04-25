@@ -90,7 +90,11 @@ export default function PetView() {
       {/* HEADER */}
       <div style={header}>
         <img
-          src={data.foto_url || "https://via.placeholder.com/150"}
+          src={
+            data?.foto_url && data.foto_url !== ""
+              ? data.foto_url + "?t=" + Date.now()
+              : "https://via.placeholder.com/150"
+          }
           style={foto}
         />
 
@@ -168,7 +172,7 @@ export default function PetView() {
   );
 }
 
-/* 🎨 CORES ALINHADAS COM PADRÃO FINAL */
+/* 🎨 ESTILOS MANTIDOS */
 
 const header = { textAlign: "center", padding: 20 };
 

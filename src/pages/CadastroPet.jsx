@@ -18,13 +18,11 @@ export default function CadastroPet() {
 
   const [salvando, setSalvando] = useState(false);
 
-  // 📞 VALIDAÇÃO
   function telefoneValido(tel) {
     const limpo = tel.replace(/\D/g, "");
     return limpo.length === 10 || limpo.length === 11;
   }
 
-  // 📸 FOTO
   function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -33,7 +31,6 @@ export default function CadastroPet() {
     setPreview(URL.createObjectURL(file));
   }
 
-  // 💾 SALVAR
   async function salvar() {
     if (salvando) return;
 
@@ -65,11 +62,11 @@ export default function CadastroPet() {
           .upload(fileName, foto);
 
         if (!uploadError) {
-          const { data } = supabase.storage
+          const { data: publicUrlData } = supabase.storage
             .from("fotos")
             .getPublicUrl(fileName);
 
-          foto_url = data.publicUrl;
+          foto_url = publicUrlData.publicUrl;
         }
       }
 
@@ -125,7 +122,6 @@ export default function CadastroPet() {
           id="fileInputPet"
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={handleFoto}
           style={{ display: "none" }}
         />
@@ -194,7 +190,7 @@ export default function CadastroPet() {
   );
 }
 
-/* 🔥 ESTILOS PRESERVADOS */
+/* 🔥 ESTILOS (mantidos) */
 
 const fotoCircle = {
   width: 120,
