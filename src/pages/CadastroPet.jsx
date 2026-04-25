@@ -9,7 +9,13 @@ export default function CadastroPet() {
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
-  const [telefone, setTelefone] = useState("");
+
+  const [contato1Nome, setContato1Nome] = useState("");
+  const [contato1Telefone, setContato1Telefone] = useState("");
+
+  const [contato2Nome, setContato2Nome] = useState("");
+  const [contato2Telefone, setContato2Telefone] = useState("");
+
   const [observacoes, setObservacoes] = useState("");
 
   const [foto, setFoto] = useState(null);
@@ -28,34 +34,29 @@ export default function CadastroPet() {
     return tel.replace(/\D/g, "").length >= 10;
   }
 
-  // 📸 FOTO (GALERIA + CÂMERA)
+  // 📸 FOTO
   async function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    try {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1024,
-        useWebWorker: true,
-      });
+    const compressed = await imageCompression(file, {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1024,
+    });
 
-      setFoto(compressed);
-      setPreview(URL.createObjectURL(compressed));
-    } catch {
-      alert("Erro ao processar imagem");
-    }
+    setFoto(compressed);
+    setPreview(URL.createObjectURL(compressed));
   }
 
   // 💾 SALVAR
   async function salvar() {
-    if (!name || !telefone) {
+    if (!name || !contato1Telefone) {
       alert("Preencha os campos obrigatórios (*)");
       return;
     }
 
-    if (!telefoneValido(telefone)) {
-      alert("Digite um telefone válido com DDD");
+    if (!telefoneValido(contato1Telefone)) {
+      alert("Telefone inválido. Use DDD.");
       return;
     }
 
@@ -81,10 +82,17 @@ export default function CadastroPet() {
       .from("tags")
       .update({
         name,
-        tipo: "pet",
-        tutor1_telefone: telefone.replace(/\D/g, ""),
+
+        tutor1_nome: contato1Nome,
+        tutor1_telefone: contato1Telefone.replace(/\D/g, ""),
+
+        tutor2_nome: contato2Nome,
+        tutor2_telefone: contato2Telefone.replace(/\D/g, ""),
+
         observacoes,
+
         foto_url,
+        tipo: "pet",
         locked: true,
       })
       .eq("code", code);
@@ -99,7 +107,6 @@ export default function CadastroPet() {
 
   return (
     <Container>
-
       <h2>🐶 Cadastro do Pet</h2>
 
       {/* FOTO */}
@@ -110,10 +117,7 @@ export default function CadastroPet() {
           {preview ? (
             <img src={preview} style={imgCircle} />
           ) : (
-            <>
-              <div style={{ fontSize: 28 }}>🐾</div>
-              <span style={fotoTexto}>Adicionar foto</span>
-            </>
+            <span>Adicionar foto</span>
           )}
 
           <input
@@ -127,7 +131,7 @@ export default function CadastroPet() {
 
       {/* DADOS */}
       <div style={card}>
-        <label style={label}>
+        <label>
           Nome do pet <span style={obrigatorio}>*</span>
         </label>
         <input
@@ -135,28 +139,58 @@ export default function CadastroPet() {
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+      </div>
 
-        <label style={label}>
-          Telefone do responsável <span style={obrigatorio}>*</span>
-        </label>
+      {/* CONTATO 1 */}
+      <div style={card}>
+        <h3>Contato principal</h3>
+
+        <input
+          style={input}
+          placeholder="Nome"
+          value={contato1Nome}
+          onChange={(e) => setContato1Nome(e.target.value)}
+        />
+
         <input
           style={{
             ...input,
-            border: telefoneValido(telefone)
+            border: telefoneValido(contato1Telefone)
               ? "1px solid #ddd"
               : "1px solid red",
           }}
           placeholder="(99) 99999-9999"
-          value={telefone}
+          value={contato1Telefone}
           onChange={(e) =>
-            setTelefone(formatarTelefone(e.target.value))
+            setContato1Telefone(formatarTelefone(e.target.value))
           }
         />
       </div>
 
-      {/* OBS */}
+      {/* CONTATO 2 */}
       <div style={card}>
-        <label style={label}>Observações</label>
+        <h3>Contato secundário</h3>
+
+        <input
+          style={input}
+          placeholder="Nome"
+          value={contato2Nome}
+          onChange={(e) => setContato2Nome(e.target.value)}
+        />
+
+        <input
+          style={input}
+          placeholder="(99) 99999-9999"
+          value={contato2Telefone}
+          onChange={(e) =>
+            setContato2Telefone(formatarTelefone(e.target.value))
+          }
+        />
+      </div>
+
+      {/* OBSERVAÇÕES */}
+      <div style={card}>
+        <label>Observações</label>
         <textarea
           style={input}
           placeholder="Ex: dócil, idoso, precisa de cuidados..."
@@ -170,38 +204,30 @@ export default function CadastroPet() {
       </p>
 
       <button style={botao} onClick={salvar}>
-        💾 Salvar Cadastro
+        💾 Salvar
       </button>
-
     </Container>
   );
 }
 
-/* ===== ESTILOS ===== */
-
+/* ESTILOS */
 const card = {
   background: "#fff",
   padding: 15,
   borderRadius: 15,
-  marginBottom: 15,
-  boxShadow: "0 4px 15px rgba(0,0,0,0.08)"
+  marginBottom: 15
 };
 
 const fotoCircle = {
   width: 120,
   height: 120,
   borderRadius: "50%",
-  background: "#ffeaea",
+  background: "#eee",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   margin: "0 auto",
   cursor: "pointer"
-};
-
-const fotoTexto = {
-  color: "#ff3b3b",
-  fontWeight: 600
 };
 
 const imgCircle = {
@@ -213,15 +239,10 @@ const imgCircle = {
 
 const input = {
   width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  marginTop: 5
-};
-
-const label = {
-  marginTop: 10,
-  display: "block"
+  padding: 10,
+  marginTop: 5,
+  borderRadius: 8,
+  border: "1px solid #ddd"
 };
 
 const obrigatorio = {
@@ -230,10 +251,9 @@ const obrigatorio = {
 
 const botao = {
   width: "100%",
-  padding: 16,
+  padding: 15,
   background: "#ff2d2d",
   color: "#fff",
   border: "none",
-  borderRadius: 12,
-  fontWeight: "bold"
+  borderRadius: 10
 };

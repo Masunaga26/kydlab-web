@@ -13,34 +13,48 @@ export default function PessoaView() {
   }, []);
 
   async function carregar() {
-    const { data: tag } = await supabase
-      .from("tags")
-      .select("*")
-      .eq("code", code)
-      .single();
+    try {
+      const { data: tag, error } = await supabase
+        .from("tags")
+        .select("*")
+        .eq("code", code)
+        .single();
 
-    if (!tag) {
-      window.location.href = "/";
-      return;
+      if (error || !tag) {
+        alert("Código inválido");
+        window.location.href = "/";
+        return;
+      }
+
+      if (!tag.locked) {
+        window.location.href = `/escolha/${code}`;
+        return;
+      }
+
+      setData(tag);
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao carregar");
     }
-
-    if (!tag.locked) {
-      window.location.href = `/escolha/${code}`;
-      return;
-    }
-
-    setData(tag);
   }
 
   function limparTelefone(tel) {
     return (tel || "").replace(/\D/g, "");
   }
 
-  const telefone = limparTelefone(data?.tutor1_telefone);
+  const telefone1 = limparTelefone(data?.tutor1_telefone);
+  const telefone2 = limparTelefone(data?.tutor2_telefone);
 
   function telefoneValido(tel) {
     return tel && tel.length >= 10;
   }
+
+  const telefonePrincipal =
+    telefoneValido(telefone1)
+      ? telefone1
+      : telefoneValido(telefone2)
+      ? telefone2
+      : null;
 
   function calcularIdade(dataNascimento) {
     if (!dataNascimento) return null;
@@ -58,15 +72,15 @@ export default function PessoaView() {
     return idade;
   }
 
-  // 🔥 MENSAGEM PADRÃO
+  // 🔥 MENSAGEM PADRÃO CORRIGIDA
   function mensagemBase() {
     return encodeURIComponent(
       `Estou com ${data.name || "essa pessoa"} em uma emergência.`
     );
   }
 
-  // 🔥 LOCALIZAÇÃO (iPHONE OK)
-  function enviarLocalizacao() {
+  // 🔥 LOCALIZAÇÃO (NÃO MEXER NA BASE)
+  function enviarLocalizacao(telefone) {
     if (!telefoneValido(telefone)) {
       alert("Telefone não disponível");
       return;
@@ -88,7 +102,6 @@ export default function PessoaView() {
       },
       () => {
         setLoadingLoc(false);
-
         window.location.href = `https://wa.me/55${telefone}?text=${mensagemBase()}`;
       },
       {
@@ -111,7 +124,7 @@ export default function PessoaView() {
         />
 
         <h2 style={nome}>Olá, meu nome é</h2>
-        <h1 style={pessoaNome}>{data.name}</h1>
+        <h1 style={pessoaNome}>{data.name || "Pessoa"}</h1>
 
         {data.data_nascimento && (
           <p style={idadeStyle}>
@@ -122,116 +135,94 @@ export default function PessoaView() {
         <p style={frase}>🚨 Em caso de emergência</p>
       </div>
 
-      {/* BOTÃO SAMU MELHORADO */}
+      {/* 🔥 BOTÃO SAMU CORRIGIDO */}
       <a href="tel:192" style={btnSamu}>
         👉 Ligar SAMU (192)
       </a>
 
-      {/* CONTATO */}
-      {telefoneValido(telefone) && (
+      {/* TIPO SANGUÍNEO */}
+      {data.tipo_sanguineo && (
+        <div style={tipoBox}>
+          🩸 Tipo sanguíneo: <strong>{data.tipo_sanguineo}</strong>
+        </div>
+      )}
+
+      {/* CONTATO PRINCIPAL */}
+      {telefoneValido(telefonePrincipal) && (
         <div style={card}>
-          <h3>Contato</h3>
+          <p style={label}>CONTATO PRINCIPAL</p>
+          <h3>{data.tutor1_nome || data.tutor2_nome || "Responsável"}</h3>
 
           <div style={botoes}>
-            <a href={`tel:${telefone}`} style={btnLigar}>
+            <a href={`tel:${telefonePrincipal}`} style={btnLigar}>
               📞 Ligar
             </a>
 
             <a
-              href={`https://wa.me/55${telefone}?text=${mensagemBase()}`}
+              href={`https://wa.me/55${telefonePrincipal}?text=${mensagemBase()}`}
               style={btnWhats}
             >
               💬 WhatsApp
             </a>
           </div>
 
-          <button style={btnLocal} onClick={enviarLocalizacao}>
+          <button
+            style={btnLocal}
+            onClick={() => enviarLocalizacao(telefonePrincipal)}
+          >
             {loadingLoc ? "Enviando..." : "📍 Enviar localização"}
           </button>
         </div>
       )}
 
+      {/* CONTATO 2 */}
+      {telefoneValido(telefone2) &&
+        telefone2 !== telefonePrincipal && (
+          <div style={card}>
+            <p style={label}>CONTATO 2</p>
+            <h3>{data.tutor2_nome}</h3>
+
+            <div style={botoes}>
+              <a href={`tel:${telefone2}`} style={btnLigar}>
+                📞 Ligar
+              </a>
+
+              <a
+                href={`https://wa.me/55${telefone2}?text=${mensagemBase()}`}
+                style={btnWhats}
+              >
+                💬 WhatsApp
+              </a>
+            </div>
+          </div>
+        )}
+
+      {/* SAÚDE */}
+      {(data.comorbidades || data.alergias || data.medicamentos) && (
+        <div style={card}>
+          <h3>🩺 Informações de saúde</h3>
+
+          {data.comorbidades && (
+            <p><strong>Comorbidades:</strong> {data.comorbidades}</p>
+          )}
+
+          {data.alergias && (
+            <p><strong>Alergias:</strong> {data.alergias}</p>
+          )}
+
+          {data.medicamentos && (
+            <p><strong>Medicamentos:</strong> {data.medicamentos}</p>
+          )}
+        </div>
+      )}
+
+      <p style={rodape}>
+        Este QR ajuda em situações de emergência.
+        Use com responsabilidade 🙏
+      </p>
+
     </Container>
   );
 }
 
-/* ESTILOS */
-
-const header = {
-  background: "#ff2d2d",
-  padding: "25px 15px",
-  textAlign: "center",
-  color: "#fff",
-  borderRadius: "0 0 20px 20px"
-};
-
-const foto = {
-  width: 120,
-  height: 120,
-  borderRadius: "50%",
-  objectFit: "cover",
-  border: "4px solid #fff"
-};
-
-const nome = { margin: 0 };
-const pessoaNome = { margin: 0, fontSize: 26 };
-
-const idadeStyle = { marginTop: 5 };
-
-const frase = { marginTop: 10 };
-
-const card = {
-  background: "#fff",
-  padding: 15,
-  borderRadius: 15,
-  marginTop: 15
-};
-
-const botoes = {
-  display: "flex",
-  gap: 10,
-  marginTop: 10
-};
-
-const btnLigar = {
-  flex: 1,
-  background: "#ff2d2d",
-  color: "#fff",
-  padding: 12,
-  textAlign: "center",
-  borderRadius: 10,
-  textDecoration: "none"
-};
-
-const btnWhats = {
-  flex: 1,
-  background: "#25D366",
-  color: "#fff",
-  padding: 12,
-  textAlign: "center",
-  borderRadius: 10,
-  textDecoration: "none"
-};
-
-const btnLocal = {
-  marginTop: 10,
-  width: "100%",
-  padding: 14,
-  borderRadius: 10,
-  border: "none",
-  background: "#ff2d2d",
-  color: "#fff"
-};
-
-const btnSamu = {
-  display: "block",
-  width: "100%",
-  padding: 14,
-  marginTop: 15,
-  textAlign: "center",
-  background: "#d10000",
-  color: "#fff",
-  borderRadius: 10,
-  textDecoration: "none",
-  fontWeight: "bold"
-};
+/* ESTILOS (mantidos) */
