@@ -13,40 +13,34 @@ export default function PessoaView() {
   }, []);
 
   async function carregar() {
-    const { data, error } = await supabase
+    const { data: tag } = await supabase
       .from("tags")
       .select("*")
       .eq("code", code)
       .single();
 
-    if (error || !data) {
-      alert("Código inválido");
+    if (!tag) {
       window.location.href = "/";
       return;
     }
 
-    if (!data.locked) {
+    if (!tag.locked) {
       window.location.href = `/escolha/${code}`;
       return;
     }
 
-    setData(data);
+    setData(tag);
   }
 
   function limparTelefone(tel) {
     return (tel || "").replace(/\D/g, "");
   }
 
+  const telefone = limparTelefone(data?.tutor1_telefone);
+
   function telefoneValido(tel) {
     return tel && tel.length >= 10;
   }
-
-  const telefonePrincipal =
-    telefoneValido(limparTelefone(data?.tutor1_telefone))
-      ? limparTelefone(data?.tutor1_telefone)
-      : telefoneValido(limparTelefone(data?.tutor2_telefone))
-      ? limparTelefone(data?.tutor2_telefone)
-      : null;
 
   function calcularIdade(dataNascimento) {
     if (!dataNascimento) return null;
@@ -57,14 +51,26 @@ export default function PessoaView() {
     let idade = hoje.getFullYear() - nasc.getFullYear();
     const m = hoje.getMonth() - nasc.getMonth();
 
-    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+    if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) {
+      idade--;
+    }
 
     return idade;
   }
 
-  // 🔥 LOCALIZAÇÃO CORRIGIDA + MENSAGEM MELHOR
-  function enviarLocalizacao(telefone) {
-    if (!telefoneValido(telefone)) return;
+  // 🔥 MENSAGEM PADRÃO
+  function mensagemBase() {
+    return encodeURIComponent(
+      `Estou com ${data.name || "essa pessoa"} em uma emergência.`
+    );
+  }
+
+  // 🔥 LOCALIZAÇÃO (iPHONE OK)
+  function enviarLocalizacao() {
+    if (!telefoneValido(telefone)) {
+      alert("Telefone não disponível");
+      return;
+    }
 
     setLoadingLoc(true);
 
@@ -74,38 +80,30 @@ export default function PessoaView() {
 
         const { latitude, longitude } = pos.coords;
 
-        const msg = encodeURIComponent(
+        const mensagem = encodeURIComponent(
           `Estou com ${data.name || "essa pessoa"} em uma emergência.\nLocalização:\nhttps://maps.google.com/?q=${latitude},${longitude}`
         );
 
-        window.location.href = `https://wa.me/55${telefone}?text=${msg}`;
+        window.location.href = `https://wa.me/55${telefone}?text=${mensagem}`;
       },
       () => {
         setLoadingLoc(false);
 
-        const msg = encodeURIComponent(
-          `Estou com ${data.name || "essa pessoa"} em uma emergência`
-        );
-
-        window.location.href = `https://wa.me/55${telefone}?text=${msg}`;
+        window.location.href = `https://wa.me/55${telefone}?text=${mensagemBase()}`;
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 0,
       }
     );
   }
 
   if (!data) return <p style={{ textAlign: "center" }}>Carregando...</p>;
 
-  const msgWhats = encodeURIComponent(
-    `Estou com ${data.name || "essa pessoa"} em uma emergência`
-  );
-
   return (
     <Container>
 
+      {/* HEADER */}
       <div style={header}>
         <img
           src={data.foto_url || "https://via.placeholder.com/150"}
@@ -124,33 +122,30 @@ export default function PessoaView() {
         <p style={frase}>🚨 Em caso de emergência</p>
       </div>
 
-      {/* 🔥 SAMU CORRIGIDO */}
+      {/* BOTÃO SAMU MELHORADO */}
       <a href="tel:192" style={btnSamu}>
-        👇 Ligar para o SAMU (192)
+        👉 Ligar SAMU (192)
       </a>
 
-      {telefonePrincipal && (
+      {/* CONTATO */}
+      {telefoneValido(telefone) && (
         <div style={card}>
-          <p style={label}>CONTATO PRINCIPAL</p>
-          <h3>{data.tutor1_nome || data.tutor2_nome}</h3>
+          <h3>Contato</h3>
 
           <div style={botoes}>
-            <a href={`tel:${telefonePrincipal}`} style={btnLigar}>
+            <a href={`tel:${telefone}`} style={btnLigar}>
               📞 Ligar
             </a>
 
             <a
-              href={`https://wa.me/55${telefonePrincipal}?text=${msgWhats}`}
+              href={`https://wa.me/55${telefone}?text=${mensagemBase()}`}
               style={btnWhats}
             >
               💬 WhatsApp
             </a>
           </div>
 
-          <button
-            style={btnLocal}
-            onClick={() => enviarLocalizacao(telefonePrincipal)}
-          >
+          <button style={btnLocal} onClick={enviarLocalizacao}>
             {loadingLoc ? "Enviando..." : "📍 Enviar localização"}
           </button>
         </div>
@@ -159,3 +154,84 @@ export default function PessoaView() {
     </Container>
   );
 }
+
+/* ESTILOS */
+
+const header = {
+  background: "#ff2d2d",
+  padding: "25px 15px",
+  textAlign: "center",
+  color: "#fff",
+  borderRadius: "0 0 20px 20px"
+};
+
+const foto = {
+  width: 120,
+  height: 120,
+  borderRadius: "50%",
+  objectFit: "cover",
+  border: "4px solid #fff"
+};
+
+const nome = { margin: 0 };
+const pessoaNome = { margin: 0, fontSize: 26 };
+
+const idadeStyle = { marginTop: 5 };
+
+const frase = { marginTop: 10 };
+
+const card = {
+  background: "#fff",
+  padding: 15,
+  borderRadius: 15,
+  marginTop: 15
+};
+
+const botoes = {
+  display: "flex",
+  gap: 10,
+  marginTop: 10
+};
+
+const btnLigar = {
+  flex: 1,
+  background: "#ff2d2d",
+  color: "#fff",
+  padding: 12,
+  textAlign: "center",
+  borderRadius: 10,
+  textDecoration: "none"
+};
+
+const btnWhats = {
+  flex: 1,
+  background: "#25D366",
+  color: "#fff",
+  padding: 12,
+  textAlign: "center",
+  borderRadius: 10,
+  textDecoration: "none"
+};
+
+const btnLocal = {
+  marginTop: 10,
+  width: "100%",
+  padding: 14,
+  borderRadius: 10,
+  border: "none",
+  background: "#ff2d2d",
+  color: "#fff"
+};
+
+const btnSamu = {
+  display: "block",
+  width: "100%",
+  padding: 14,
+  marginTop: 15,
+  textAlign: "center",
+  background: "#d10000",
+  color: "#fff",
+  borderRadius: 10,
+  textDecoration: "none",
+  fontWeight: "bold"
+};

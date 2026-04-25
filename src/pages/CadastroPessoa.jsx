@@ -3,64 +3,47 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Container from "../components/Container";
 import imageCompression from "browser-image-compression";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 
 export default function CadastroPessoa() {
   const { code } = useParams();
   const navigate = useNavigate();
 
-  const dataPadrao = new Date();
-  dataPadrao.setFullYear(dataPadrao.getFullYear() - 18);
-
   const [name, setName] = useState("");
-  const [dataNascimento, setDataNascimento] = useState(dataPadrao);
-  const [dataTexto, setDataTexto] = useState("");
-
-  const [contato1Nome, setContato1Nome] = useState("");
-  const [contato1Telefone, setContato1Telefone] = useState("");
-
-  const [contato2Nome, setContato2Nome] = useState("");
-  const [contato2Telefone, setContato2Telefone] = useState("");
-
-  const [tipoSanguineo, setTipoSanguineo] = useState("");
-  const [comorbidades, setComorbidades] = useState("");
-  const [alergias, setAlergias] = useState("");
-  const [medicamentos, setMedicamentos] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
+  const [telefone, setTelefone] = useState("");
 
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // 🔥 TELEFONE FORMATADO
+  // 🔥 FORMATAR DATA
+  function formatarData(valor) {
+    return valor
+      .replace(/\D/g, "")
+      .replace(/(\d{2})(\d)/, "$1/$2")
+      .replace(/(\d{2})(\d)/, "$1/$2")
+      .slice(0, 10);
+  }
+
+  // 🔥 FORMATAR TELEFONE
   function formatarTelefone(valor) {
-    const v = valor.replace(/\D/g, "");
-
-    if (v.length <= 10) {
-      return v
-        .replace(/(\d{2})(\d)/, "($1) $2")
-        .replace(/(\d{4})(\d)/, "$1-$2");
-    }
-
-    return v
-      .replace(/(\d{2})(\d)/, "($1) $2")
-      .replace(/(\d{5})(\d)/, "$1-$2");
+    return valor
+      .replace(/\D/g, "")
+      .replace(/^(\d{2})(\d)/g, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2")
+      .slice(0, 15);
   }
 
   function telefoneValido(tel) {
-    const t = tel.replace(/\D/g, "");
-    return t.length === 10 || t.length === 11;
+    return tel.replace(/\D/g, "").length >= 10;
   }
 
-  function limparTelefone(tel) {
-    return tel.replace(/\D/g, "");
+  function converterData(data) {
+    if (!data) return null;
+    const [dia, mes, ano] = data.split("/");
+    return `${ano}-${mes}-${dia}`;
   }
 
-  function converterData(date) {
-    if (!date) return null;
-    return date.toISOString().split("T")[0];
-  }
-
-  // 🔥 FOTO OK (mantido)
+  // 📸 FOTO
   async function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -73,24 +56,21 @@ export default function CadastroPessoa() {
       });
 
       setFoto(compressed);
-
-      const reader = new FileReader();
-      reader.onloadend = () => setPreview(reader.result);
-      reader.readAsDataURL(compressed);
-
-    } catch (err) {
+      setPreview(URL.createObjectURL(compressed));
+    } catch {
       alert("Erro ao processar imagem");
     }
   }
 
+  // 💾 SALVAR
   async function salvar() {
-    let erros = [];
+    if (!name || !telefone || !dataNascimento) {
+      alert("Preencha os campos obrigatórios (*)");
+      return;
+    }
 
-    if (!name) erros.push("Nome");
-    if (!telefoneValido(contato1Telefone)) erros.push("Telefone com DDD");
-
-    if (erros.length > 0) {
-      alert(`Preencha corretamente:\n- ${erros.join("\n- ")}`);
+    if (!telefoneValido(telefone)) {
+      alert("Digite um telefone válido com DDD");
       return;
     }
 
@@ -112,24 +92,22 @@ export default function CadastroPessoa() {
       }
     }
 
-    await supabase
+    const { error } = await supabase
       .from("tags")
       .update({
         name,
         data_nascimento: converterData(dataNascimento),
+        tutor1_telefone: telefone.replace(/\D/g, ""),
         tipo: "pessoa",
-        tutor1_nome: contato1Nome,
-        tutor1_telefone: limparTelefone(contato1Telefone),
-        tutor2_nome: contato2Nome,
-        tutor2_telefone: limparTelefone(contato2Telefone),
-        tipo_sanguineo: tipoSanguineo,
-        comorbidades,
-        alergias,
-        medicamentos,
         foto_url,
-        locked: true
+        locked: true,
       })
       .eq("code", code);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
 
     navigate(`/pessoa/${code}`);
   }
@@ -137,11 +115,9 @@ export default function CadastroPessoa() {
   return (
     <Container>
 
-      <div style={header}>
-        <h2>👤 Cadastro de Pessoa</h2>
-        <p style={subtitle}>Identificação • {code}</p>
-      </div>
+      <h2>👤 Cadastro de Pessoa</h2>
 
+      {/* FOTO */}
       <div style={card}>
         <h3>📸 Foto</h3>
 
@@ -151,86 +127,63 @@ export default function CadastroPessoa() {
           ) : (
             <>
               <div style={{ fontSize: 28 }}>👤</div>
-              <span style={fotoTexto}>Enviar foto</span>
+              <span style={fotoTexto}>Adicionar foto</span>
             </>
           )}
 
           <input
             type="file"
-            accept="image/jpeg,image/png"
+            accept="image/*"
             onChange={handleFoto}
             hidden
           />
         </label>
+      </div>
 
+      {/* DADOS */}
+      <div style={card}>
+        <label style={label}>
+          Nome completo <span style={obrigatorio}>*</span>
+        </label>
         <input
           style={input}
-          placeholder="Nome completo"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
 
-        <label style={label}>📅 Data de nascimento</label>
-
-        <DatePicker
-          selected={dataNascimento}
-          onChange={(date) => setDataNascimento(date)}
-          dateFormat="dd/MM/yyyy"
-          maxDate={new Date()}
-          showYearDropdown
-          scrollableYearDropdown
-          yearDropdownItemNumber={100}
-        />
-
-        {/* 🔥 DIGITAÇÃO MANUAL */}
+        <label style={label}>
+          Data de nascimento <span style={obrigatorio}>*</span>
+        </label>
         <input
           style={input}
-          placeholder="Digite: DD/MM/AAAA"
-          value={dataTexto}
-          onChange={(e) => setDataTexto(e.target.value)}
-        />
-      </div>
-
-      <div style={card}>
-        <h3>📞 Contatos</h3>
-
-        <input
-          style={input}
-          placeholder="Nome do contato principal"
-          value={contato1Nome}
-          onChange={(e) => setContato1Nome(e.target.value)}
+          placeholder="__/__/____"
+          value={dataNascimento}
+          onChange={(e) =>
+            setDataNascimento(formatarData(e.target.value))
+          }
         />
 
+        <label style={label}>
+          Telefone <span style={obrigatorio}>*</span>
+        </label>
         <input
           style={{
             ...input,
-            border: telefoneValido(contato1Telefone)
+            border: telefoneValido(telefone)
               ? "1px solid #ddd"
-              : "1px solid red"
+              : "1px solid red",
           }}
-          placeholder="(11) 99999-9999"
-          value={contato1Telefone}
+          placeholder="(99) 99999-9999"
+          value={telefone}
           onChange={(e) =>
-            setContato1Telefone(formatarTelefone(e.target.value))
-          }
-        />
-
-        <input
-          style={input}
-          placeholder="Nome contato 2"
-          value={contato2Nome}
-          onChange={(e) => setContato2Nome(e.target.value)}
-        />
-
-        <input
-          style={input}
-          placeholder="Telefone contato 2"
-          value={contato2Telefone}
-          onChange={(e) =>
-            setContato2Telefone(formatarTelefone(e.target.value))
+            setTelefone(formatarTelefone(e.target.value))
           }
         />
       </div>
+
+      <p style={{ fontSize: 12, color: "#777" }}>
+        * Campos obrigatórios
+      </p>
 
       <button style={botao} onClick={salvar}>
         💾 Salvar Cadastro
@@ -240,4 +193,63 @@ export default function CadastroPessoa() {
   );
 }
 
-/* estilos mantidos */
+/* ===== ESTILOS ===== */
+
+const card = {
+  background: "#fff",
+  padding: 15,
+  borderRadius: 15,
+  marginBottom: 15,
+  boxShadow: "0 4px 15px rgba(0,0,0,0.08)"
+};
+
+const fotoCircle = {
+  width: 120,
+  height: 120,
+  borderRadius: "50%",
+  background: "#ffeaea",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  margin: "0 auto",
+  cursor: "pointer"
+};
+
+const fotoTexto = {
+  color: "#ff3b3b",
+  fontWeight: 600
+};
+
+const imgCircle = {
+  width: "100%",
+  height: "100%",
+  borderRadius: "50%",
+  objectFit: "cover"
+};
+
+const input = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 10,
+  border: "1px solid #ddd",
+  marginTop: 5
+};
+
+const label = {
+  marginTop: 10,
+  display: "block"
+};
+
+const obrigatorio = {
+  color: "red"
+};
+
+const botao = {
+  width: "100%",
+  padding: 16,
+  background: "#ff2d2d",
+  color: "#fff",
+  border: "none",
+  borderRadius: 12,
+  fontWeight: "bold"
+};

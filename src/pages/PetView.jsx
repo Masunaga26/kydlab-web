@@ -13,44 +13,48 @@ export default function PetView() {
   }, []);
 
   async function carregar() {
-    const { data, error } = await supabase
+    const { data: tag } = await supabase
       .from("tags")
       .select("*")
       .eq("code", code)
       .single();
 
-    if (error || !data) {
-      alert("Código inválido");
+    if (!tag) {
       window.location.href = "/";
       return;
     }
 
-    if (!data.locked) {
+    if (!tag.locked) {
       window.location.href = `/escolha/${code}`;
       return;
     }
 
-    setData(data);
+    setData(tag);
   }
 
   function limparTelefone(tel) {
     return (tel || "").replace(/\D/g, "");
   }
 
+  const telefone = limparTelefone(data?.tutor1_telefone);
+
   function telefoneValido(tel) {
     return tel && tel.length >= 10;
   }
 
-  const telefonePrincipal =
-    telefoneValido(limparTelefone(data?.tutor1_telefone))
-      ? limparTelefone(data?.tutor1_telefone)
-      : telefoneValido(limparTelefone(data?.tutor2_telefone))
-      ? limparTelefone(data?.tutor2_telefone)
-      : null;
+  // 🔥 MENSAGEM PADRÃO (IGUAL AO PESSOA)
+  function mensagemBase() {
+    return encodeURIComponent(
+      `Encontrei ${data.name || "esse pet"} em uma emergência.`
+    );
+  }
 
-  // 🔥 LOCALIZAÇÃO PADRONIZADA
-  function enviarLocalizacao(telefone) {
-    if (!telefoneValido(telefone)) return;
+  // 🔥 LOCALIZAÇÃO (iPhone OK)
+  function enviarLocalizacao() {
+    if (!telefoneValido(telefone)) {
+      alert("Telefone não disponível");
+      return;
+    }
 
     setLoadingLoc(true);
 
@@ -60,38 +64,30 @@ export default function PetView() {
 
         const { latitude, longitude } = pos.coords;
 
-        const msg = encodeURIComponent(
-          `Estou com ${data.name || "esse pet"} em uma emergência.\nLocalização:\nhttps://maps.google.com/?q=${latitude},${longitude}`
+        const mensagem = encodeURIComponent(
+          `Encontrei ${data.name || "esse pet"} em uma emergência.\nLocalização:\nhttps://maps.google.com/?q=${latitude},${longitude}`
         );
 
-        window.location.href = `https://wa.me/55${telefone}?text=${msg}`;
+        window.location.href = `https://wa.me/55${telefone}?text=${mensagem}`;
       },
       () => {
         setLoadingLoc(false);
 
-        const msg = encodeURIComponent(
-          `Estou com ${data.name || "esse pet"} em uma emergência`
-        );
-
-        window.location.href = `https://wa.me/55${telefone}?text=${msg}`;
+        window.location.href = `https://wa.me/55${telefone}?text=${mensagemBase()}`;
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 0,
       }
     );
   }
 
   if (!data) return <p style={{ textAlign: "center" }}>Carregando...</p>;
 
-  const msgWhats = encodeURIComponent(
-    `Estou com ${data.name || "esse pet"} em uma emergência`
-  );
-
   return (
     <Container>
 
+      {/* HEADER */}
       <div style={header}>
         <img
           src={data.foto_url || "https://via.placeholder.com/150"}
@@ -106,64 +102,39 @@ export default function PetView() {
         </p>
       </div>
 
-      {telefonePrincipal && (
+      {/* CONTATO */}
+      {telefoneValido(telefone) && (
         <div style={card}>
-          <p style={label}>CONTATO PRINCIPAL</p>
-          <h3>{data.tutor1_nome || data.tutor2_nome}</h3>
+          <h3>Contato</h3>
 
           <div style={botoes}>
-            <a href={`tel:${telefonePrincipal}`} style={btnLigar}>
+            <a href={`tel:${telefone}`} style={btnLigar}>
               📞 Ligar
             </a>
 
             <a
-              href={`https://wa.me/55${telefonePrincipal}?text=${msgWhats}`}
+              href={`https://wa.me/55${telefone}?text=${mensagemBase()}`}
               style={btnWhats}
             >
               💬 WhatsApp
             </a>
           </div>
 
-          <button
-            style={btnLocal}
-            onClick={() => enviarLocalizacao(telefonePrincipal)}
-          >
+          <button style={btnLocal} onClick={enviarLocalizacao}>
             {loadingLoc ? "Enviando..." : "📍 Enviar localização"}
           </button>
         </div>
       )}
 
-      {telefoneValido(limparTelefone(data?.tutor2_telefone)) &&
-        limparTelefone(data.tutor2_telefone) !== telefonePrincipal && (
-          <div style={card}>
-            <p style={label}>CONTATO 2</p>
-            <h3>{data.tutor2_nome}</h3>
-
-            <div style={botoes}>
-              <a
-                href={`tel:${limparTelefone(data.tutor2_telefone)}`}
-                style={btnLigar}
-              >
-                📞 Ligar
-              </a>
-
-              <a
-                href={`https://wa.me/55${limparTelefone(data.tutor2_telefone)}?text=${msgWhats}`}
-                style={btnWhats}
-              >
-                💬 WhatsApp
-              </a>
-            </div>
-          </div>
-        )}
-
+      {/* OBSERVAÇÕES */}
       {data.observacoes && (
         <div style={card}>
-          <p style={label}>INFORMAÇÕES</p>
+          <h3>Informações</h3>
           <p>{data.observacoes}</p>
         </div>
       )}
 
+      {/* RODAPÉ */}
       <p style={rodape}>
         Este QR ajuda a encontrar pets perdidos 🐾  
         Compartilhe com responsabilidade 🙏
@@ -172,3 +143,76 @@ export default function PetView() {
     </Container>
   );
 }
+
+/* ESTILOS */
+
+const header = {
+  background: "#ff2d2d",
+  padding: "25px 15px",
+  textAlign: "center",
+  color: "#fff",
+  borderRadius: "0 0 20px 20px"
+};
+
+const foto = {
+  width: 120,
+  height: 120,
+  borderRadius: "50%",
+  objectFit: "cover",
+  border: "4px solid #fff"
+};
+
+const nome = { margin: 0 };
+const petNome = { margin: 0, fontSize: 26 };
+
+const frase = { marginTop: 10 };
+
+const card = {
+  background: "#fff",
+  padding: 15,
+  borderRadius: 15,
+  marginTop: 15
+};
+
+const botoes = {
+  display: "flex",
+  gap: 10,
+  marginTop: 10
+};
+
+const btnLigar = {
+  flex: 1,
+  background: "#ff2d2d",
+  color: "#fff",
+  padding: 12,
+  textAlign: "center",
+  borderRadius: 10,
+  textDecoration: "none"
+};
+
+const btnWhats = {
+  flex: 1,
+  background: "#25D366",
+  color: "#fff",
+  padding: 12,
+  textAlign: "center",
+  borderRadius: 10,
+  textDecoration: "none"
+};
+
+const btnLocal = {
+  marginTop: 10,
+  width: "100%",
+  padding: 14,
+  borderRadius: 10,
+  border: "none",
+  background: "#ff2d2d",
+  color: "#fff"
+};
+
+const rodape = {
+  textAlign: "center",
+  fontSize: 12,
+  color: "#777",
+  marginTop: 20
+};
