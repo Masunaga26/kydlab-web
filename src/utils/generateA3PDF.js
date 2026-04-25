@@ -1,4 +1,3 @@
-import { supabase } from "./supabaseClient";
 import { generateA3PDF } from "./generateA3PDF";
 
 export async function gerarLoteA3() {
