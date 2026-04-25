@@ -37,27 +37,24 @@ export default function PetView() {
   }
 
   function telefoneValido(tel) {
-    return tel && tel.length >= 10;
+    return tel && (tel.length === 10 || tel.length === 11);
   }
 
   const telefone1 = limparTelefone(data?.tutor1_telefone);
   const telefone2 = limparTelefone(data?.tutor2_telefone);
 
-  const telefonePrincipal =
-    telefoneValido(telefone1)
-      ? telefone1
-      : telefoneValido(telefone2)
-      ? telefone2
-      : null;
+  const telefonePrincipal = telefoneValido(telefone1)
+    ? telefone1
+    : telefoneValido(telefone2)
+    ? telefone2
+    : null;
 
-  // 🔥 MENSAGEM CORRIGIDA
   function mensagemBase() {
     return encodeURIComponent(
       `Encontrei ${data.name || "esse pet"} em uma emergência.`
     );
   }
 
-  // 📍 LOCALIZAÇÃO (mantida)
   function enviarLocalizacao(telefone) {
     if (!telefoneValido(telefone)) {
       alert("Telefone não disponível");
@@ -108,7 +105,7 @@ export default function PetView() {
       {/* CONTATO PRINCIPAL */}
       {telefoneValido(telefonePrincipal) && (
         <div style={card}>
-          <p style={label}>CONTATO PRINCIPAL</p>
+          <p style={label}>TUTOR 1</p>
           <h3>{data.tutor1_nome || data.tutor2_nome}</h3>
 
           <div style={botoes}>
@@ -137,7 +134,7 @@ export default function PetView() {
       {telefoneValido(telefone2) &&
         telefone2 !== telefonePrincipal && (
           <div style={card}>
-            <p style={label}>CONTATO 2</p>
+            <p style={label}>TUTOR 2</p>
             <h3>{data.tutor2_nome}</h3>
 
             <div style={botoes}>
@@ -158,7 +155,7 @@ export default function PetView() {
       {/* OBSERVAÇÕES */}
       {data.observacoes && (
         <div style={card}>
-          <p style={label}>INFORMAÇÕES</p>
+          <p style={label}>INFORMAÇÕES IMPORTANTES</p>
           <p>{data.observacoes}</p>
         </div>
       )}
@@ -171,12 +168,9 @@ export default function PetView() {
   );
 }
 
-/* 🔥 ESTILOS RESTAURADOS */
+/* 🎨 CORES ALINHADAS COM PADRÃO FINAL */
 
-const header = {
-  textAlign: "center",
-  padding: 20,
-};
+const header = { textAlign: "center", padding: 20 };
 
 const foto = {
   width: 120,
@@ -193,9 +187,7 @@ const petNome = {
   fontSize: 24,
 };
 
-const frase = {
-  color: "#666",
-};
+const frase = { color: "#666" };
 
 const card = {
   background: "#fff",
@@ -212,7 +204,7 @@ const botoes = {
 
 const btnLigar = {
   flex: 1,
-  background: "#3498db",
+  background: "#e53935",
   color: "#fff",
   padding: 10,
   textAlign: "center",
@@ -236,7 +228,7 @@ const btnLocal = {
   padding: 10,
   borderRadius: 10,
   border: "none",
-  background: "#f39c12",
+  background: "#e53935",
   color: "#fff",
 };
 

@@ -37,18 +37,17 @@ export default function PessoaView() {
   }
 
   function telefoneValido(tel) {
-    return tel && tel.length >= 10;
+    return tel && (tel.length === 10 || tel.length === 11);
   }
 
   const telefone1 = limparTelefone(data?.tutor1_telefone);
   const telefone2 = limparTelefone(data?.tutor2_telefone);
 
-  const telefonePrincipal =
-    telefoneValido(telefone1)
-      ? telefone1
-      : telefoneValido(telefone2)
-      ? telefone2
-      : null;
+  const telefonePrincipal = telefoneValido(telefone1)
+    ? telefone1
+    : telefoneValido(telefone2)
+    ? telefone2
+    : null;
 
   function calcularIdade(dataNascimento) {
     if (!dataNascimento) return null;
@@ -66,14 +65,12 @@ export default function PessoaView() {
     return idade;
   }
 
-  // 🔥 MENSAGEM CORRIGIDA
   function mensagemBase() {
     return encodeURIComponent(
       `Estou com ${data.name || "essa pessoa"} em uma emergência.`
     );
   }
 
-  // 📍 LOCALIZAÇÃO (mantido)
   function enviarLocalizacao(telefone) {
     if (!telefoneValido(telefone)) {
       alert("Telefone não disponível");
@@ -114,7 +111,7 @@ export default function PessoaView() {
         />
 
         <h2 style={nome}>Olá, meu nome é</h2>
-        <h1 style={pessoaNome}>{data.name || "Pessoa"}</h1>
+        <h1 style={pessoaNome}>{data.name}</h1>
 
         {data.data_nascimento && (
           <p style={idadeStyle}>
@@ -125,12 +122,12 @@ export default function PessoaView() {
         <p style={frase}>🚨 Em caso de emergência</p>
       </div>
 
-      {/* 🔥 SAMU MELHORADO */}
+      {/* SAMU */}
       <a href="tel:192" style={btnSamu}>
         👉 Ligar SAMU (192)
       </a>
 
-      {/* TIPO SANGUÍNEO */}
+      {/* TIPO SANGUINEO */}
       {data.tipo_sanguineo && (
         <div style={tipoBox}>
           🩸 Tipo sanguíneo: <strong>{data.tipo_sanguineo}</strong>
@@ -214,57 +211,50 @@ export default function PessoaView() {
   );
 }
 
-/* 🔥 ESTILOS RESTAURADOS (ERRO RESOLVIDO AQUI) */
+/* 🎨 CORES AJUSTADAS (SEM MUDAR ESTRUTURA) */
 
-const header = {
-  textAlign: "center",
-  padding: 20,
-};
+const header = { textAlign: "center", padding: 20 };
 
 const foto = {
   width: 120,
   height: 120,
   borderRadius: "50%",
   objectFit: "cover",
-  marginBottom: 10,
+  marginBottom: 10
 };
 
 const nome = { margin: 0 };
 
 const pessoaNome = {
   margin: 0,
-  fontSize: 24,
+  fontSize: 24
 };
 
-const frase = {
-  color: "#666",
-};
+const frase = { color: "#666" };
 
-const idadeStyle = {
-  color: "#888",
-};
+const idadeStyle = { color: "#888" };
 
 const card = {
   background: "#fff",
   padding: 15,
   borderRadius: 15,
-  marginBottom: 15,
+  marginBottom: 15
 };
 
 const botoes = {
   display: "flex",
   gap: 10,
-  marginTop: 10,
+  marginTop: 10
 };
 
 const btnLigar = {
   flex: 1,
-  background: "#3498db",
+  background: "#e53935",
   color: "#fff",
   padding: 10,
   textAlign: "center",
   borderRadius: 10,
-  textDecoration: "none",
+  textDecoration: "none"
 };
 
 const btnWhats = {
@@ -274,7 +264,7 @@ const btnWhats = {
   padding: 10,
   textAlign: "center",
   borderRadius: 10,
-  textDecoration: "none",
+  textDecoration: "none"
 };
 
 const btnLocal = {
@@ -283,19 +273,19 @@ const btnLocal = {
   padding: 10,
   borderRadius: 10,
   border: "none",
-  background: "#f39c12",
-  color: "#fff",
+  background: "#e53935",
+  color: "#fff"
 };
 
 const btnSamu = {
   display: "block",
   textAlign: "center",
   padding: 15,
-  background: "#e74c3c",
+  background: "#e53935",
   color: "#fff",
   borderRadius: 10,
   textDecoration: "none",
-  marginBottom: 15,
+  marginBottom: 15
 };
 
 const tipoBox = {
@@ -303,17 +293,17 @@ const tipoBox = {
   padding: 10,
   borderRadius: 10,
   marginBottom: 10,
-  textAlign: "center",
+  textAlign: "center"
 };
 
 const label = {
   fontSize: 12,
-  color: "#888",
+  color: "#888"
 };
 
 const rodape = {
   textAlign: "center",
   fontSize: 12,
   color: "#aaa",
-  marginTop: 20,
+  marginTop: 20
 };

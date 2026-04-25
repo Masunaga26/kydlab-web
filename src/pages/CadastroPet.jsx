@@ -1,259 +1,252 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Container from "../components/Container";
-import imageCompression from "browser-image-compression";
 
 export default function CadastroPet() {
   const { code } = useParams();
-  const navigate = useNavigate();
 
-  const [name, setName] = useState("");
-
-  const [contato1Nome, setContato1Nome] = useState("");
-  const [contato1Telefone, setContato1Telefone] = useState("");
-
-  const [contato2Nome, setContato2Nome] = useState("");
-  const [contato2Telefone, setContato2Telefone] = useState("");
-
+  const [nome, setNome] = useState("");
+  const [telefone1, setTelefone1] = useState("");
+  const [telefone2, setTelefone2] = useState("");
+  const [tutor1Nome, setTutor1Nome] = useState("");
+  const [tutor2Nome, setTutor2Nome] = useState("");
   const [observacoes, setObservacoes] = useState("");
 
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // 🔥 FORMATAR TELEFONE
-  function formatarTelefone(valor) {
-    return valor
-      .replace(/\D/g, "")
-      .replace(/^(\d{2})(\d)/g, "($1) $2")
-      .replace(/(\d{5})(\d)/, "$1-$2")
-      .slice(0, 15);
-  }
+  const [salvando, setSalvando] = useState(false);
 
+  // 📞 VALIDAÇÃO
   function telefoneValido(tel) {
-    return tel.replace(/\D/g, "").length >= 10;
+    const limpo = tel.replace(/\D/g, "");
+    return limpo.length === 10 || limpo.length === 11;
   }
 
   // 📸 FOTO
-  async function handleFoto(e) {
+  function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    const compressed = await imageCompression(file, {
-      maxSizeMB: 1,
-      maxWidthOrHeight: 1024,
-    });
-
-    setFoto(compressed);
-    setPreview(URL.createObjectURL(compressed));
+    setFoto(file);
+    setPreview(URL.createObjectURL(file));
   }
 
   // 💾 SALVAR
   async function salvar() {
-    if (!name || !contato1Telefone) {
-      alert("Preencha os campos obrigatórios (*)");
+    if (salvando) return;
+
+    if (!nome) {
+      alert("Preencha o nome do pet");
       return;
     }
 
-    if (!telefoneValido(contato1Telefone)) {
-      alert("Telefone inválido. Use DDD.");
+    if (!telefoneValido(telefone1)) {
+      alert("Telefone inválido");
       return;
     }
 
-    let foto_url = null;
+    if (telefone2 && !telefoneValido(telefone2)) {
+      alert("Telefone inválido");
+      return;
+    }
 
-    if (foto) {
-      const fileName = `${code}_${Date.now()}`;
+    setSalvando(true);
 
-      const { error } = await supabase.storage
-        .from("profile-photos")
-        .upload(fileName, foto);
+    try {
+      let foto_url = null;
 
-      if (!error) {
-        const { data } = supabase.storage
-          .from("profile-photos")
-          .getPublicUrl(fileName);
+      if (foto) {
+        const fileName = `${code}-${Date.now()}`;
 
-        foto_url = data.publicUrl;
+        const { error: uploadError } = await supabase.storage
+          .from("fotos")
+          .upload(fileName, foto);
+
+        if (!uploadError) {
+          const { data } = supabase.storage
+            .from("fotos")
+            .getPublicUrl(fileName);
+
+          foto_url = data.publicUrl;
+        }
       }
+
+      const { error } = await supabase
+        .from("tags")
+        .update({
+          name: nome,
+
+          tutor1_nome: tutor1Nome,
+          tutor1_telefone: telefone1,
+
+          tutor2_nome: tutor2Nome,
+          tutor2_telefone: telefone2,
+
+          observacoes,
+          foto_url,
+
+          tipo: "pet",
+          locked: true,
+        })
+        .eq("code", code);
+
+      if (error) {
+        alert("Erro ao salvar");
+        return;
+      }
+
+      window.location.href = `/pet/${code}`;
+
+    } catch (err) {
+      console.error(err);
+      alert("Erro inesperado");
+    } finally {
+      setSalvando(false);
     }
-
-    const { error } = await supabase
-      .from("tags")
-      .update({
-        name,
-
-        tutor1_nome: contato1Nome,
-        tutor1_telefone: contato1Telefone.replace(/\D/g, ""),
-
-        tutor2_nome: contato2Nome,
-        tutor2_telefone: contato2Telefone.replace(/\D/g, ""),
-
-        observacoes,
-
-        foto_url,
-        tipo: "pet",
-        locked: true,
-      })
-      .eq("code", code);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    navigate(`/pet/${code}`);
   }
 
   return (
     <Container>
-      <h2>🐶 Cadastro do Pet</h2>
 
       {/* FOTO */}
-      <div style={card}>
-        <h3>📸 Foto</h3>
+      <div
+        style={fotoCircle}
+        onClick={() => document.getElementById("fileInputPet").click()}
+      >
+        {preview ? (
+          <img src={preview} style={imgCircle} />
+        ) : (
+          <span style={fotoTexto}>Adicionar foto</span>
+        )}
 
-        <label style={fotoCircle}>
-          {preview ? (
-            <img src={preview} style={imgCircle} />
-          ) : (
-            <span>Adicionar foto</span>
-          )}
-
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFoto}
-            hidden
-          />
-        </label>
-      </div>
-
-      {/* DADOS */}
-      <div style={card}>
-        <label>
-          Nome do pet <span style={obrigatorio}>*</span>
-        </label>
         <input
-          style={input}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          id="fileInputPet"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFoto}
+          style={{ display: "none" }}
         />
       </div>
+
+      {/* NOME */}
+      <label style={label}>Nome do pet *</label>
+      <input
+        value={nome}
+        onChange={(e) => setNome(e.target.value)}
+        style={input}
+      />
 
       {/* CONTATO 1 */}
-      <div style={card}>
-        <h3>Contato principal</h3>
+      <label style={label}>Contato principal *</label>
+      <input
+        placeholder="(99)99999-9999"
+        value={telefone1}
+        onChange={(e) =>
+          setTelefone1(e.target.value.replace(/[^0-9()\- ]/g, ""))
+        }
+        style={input}
+      />
 
-        <input
-          style={input}
-          placeholder="Nome"
-          value={contato1Nome}
-          onChange={(e) => setContato1Nome(e.target.value)}
-        />
-
-        <input
-          style={{
-            ...input,
-            border: telefoneValido(contato1Telefone)
-              ? "1px solid #ddd"
-              : "1px solid red",
-          }}
-          placeholder="(99) 99999-9999"
-          value={contato1Telefone}
-          onChange={(e) =>
-            setContato1Telefone(formatarTelefone(e.target.value))
-          }
-        />
-      </div>
+      <input
+        placeholder="Nome contato"
+        value={tutor1Nome}
+        onChange={(e) => setTutor1Nome(e.target.value)}
+        style={input}
+      />
 
       {/* CONTATO 2 */}
-      <div style={card}>
-        <h3>Contato secundário</h3>
+      <label style={label}>Contato secundário</label>
+      <input
+        placeholder="(99)99999-9999"
+        value={telefone2}
+        onChange={(e) =>
+          setTelefone2(e.target.value.replace(/[^0-9()\- ]/g, ""))
+        }
+        style={input}
+      />
 
-        <input
-          style={input}
-          placeholder="Nome"
-          value={contato2Nome}
-          onChange={(e) => setContato2Nome(e.target.value)}
-        />
-
-        <input
-          style={input}
-          placeholder="(99) 99999-9999"
-          value={contato2Telefone}
-          onChange={(e) =>
-            setContato2Telefone(formatarTelefone(e.target.value))
-          }
-        />
-      </div>
+      <input
+        placeholder="Nome contato"
+        value={tutor2Nome}
+        onChange={(e) => setTutor2Nome(e.target.value)}
+        style={input}
+      />
 
       {/* OBSERVAÇÕES */}
-      <div style={card}>
-        <label>Observações</label>
-        <textarea
-          style={input}
-          placeholder="Ex: dócil, idoso, precisa de cuidados..."
-          value={observacoes}
-          onChange={(e) => setObservacoes(e.target.value)}
-        />
-      </div>
+      <label style={label}>Informações importantes</label>
+      <input
+        value={observacoes}
+        onChange={(e) => setObservacoes(e.target.value)}
+        style={input}
+      />
 
-      <p style={{ fontSize: 12, color: "#777" }}>
-        * Campos obrigatórios
-      </p>
-
-      <button style={botao} onClick={salvar}>
-        💾 Salvar
+      {/* BOTÃO */}
+      <button onClick={salvar} disabled={salvando} style={btnSalvar}>
+        {salvando ? "Salvando..." : "Salvar"}
       </button>
+
+      <p style={obs}>*Obrigatório</p>
+
     </Container>
   );
 }
 
-/* ESTILOS */
-const card = {
-  background: "#fff",
-  padding: 15,
-  borderRadius: 15,
-  marginBottom: 15
-};
+/* 🔥 ESTILOS PRESERVADOS */
 
 const fotoCircle = {
   width: 120,
   height: 120,
   borderRadius: "50%",
-  background: "#eee",
+  background: "#ffeaea",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  margin: "0 auto",
-  cursor: "pointer"
+  margin: "20px auto",
+  cursor: "pointer",
 };
 
 const imgCircle = {
   width: "100%",
   height: "100%",
   borderRadius: "50%",
-  objectFit: "cover"
+  objectFit: "cover",
+};
+
+const fotoTexto = {
+  color: "#ff3b3b",
+  fontWeight: 600,
 };
 
 const input = {
   width: "100%",
-  padding: 10,
+  padding: 12,
+  borderRadius: 10,
+  border: "1px solid #ddd",
   marginTop: 5,
-  borderRadius: 8,
-  border: "1px solid #ddd"
+  marginBottom: 10,
 };
 
-const obrigatorio = {
-  color: "red"
+const label = {
+  marginTop: 10,
+  display: "block",
 };
 
-const botao = {
+const btnSalvar = {
   width: "100%",
   padding: 15,
-  background: "#ff2d2d",
+  borderRadius: 12,
+  background: "#ff3b3b",
   color: "#fff",
   border: "none",
-  borderRadius: 10
+  marginTop: 20,
+};
+
+const obs = {
+  textAlign: "center",
+  fontSize: 12,
+  color: "#999",
+  marginTop: 10,
 };
