@@ -159,5 +159,3 @@ export default function CadastroPessoa() {
         }}
         style={input}
       />
-
-      {/* RESTANTE IGUAL */}
