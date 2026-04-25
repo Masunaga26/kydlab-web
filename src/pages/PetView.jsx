@@ -13,42 +13,35 @@ export default function PetView() {
   }, []);
 
   async function carregar() {
-    try {
-      const { data: tag, error } = await supabase
-        .from("tags")
-        .select("*")
-        .eq("code", code)
-        .single();
+    const { data, error } = await supabase
+      .from("tags")
+      .select("*")
+      .eq("code", code)
+      .single();
 
-      if (error || !tag) {
-        alert("Código inválido");
-        window.location.href = "/";
-        return;
-      }
-
-      if (!tag.locked) {
-        window.location.href = `/escolha/${code}`;
-        return;
-      }
-
-      setData(tag);
-    } catch (err) {
-      console.error("Erro ao carregar PetView:", err);
-      alert("Erro ao carregar dados");
+    if (error || !data) {
       window.location.href = "/";
+      return;
     }
+
+    if (!data.locked) {
+      window.location.href = `/escolha/${code}`;
+      return;
+    }
+
+    setData(data);
   }
 
   function limparTelefone(tel) {
     return (tel || "").replace(/\D/g, "");
   }
 
-  const telefone1 = limparTelefone(data?.tutor1_telefone);
-  const telefone2 = limparTelefone(data?.tutor2_telefone);
-
   function telefoneValido(tel) {
     return tel && tel.length >= 10;
   }
+
+  const telefone1 = limparTelefone(data?.tutor1_telefone);
+  const telefone2 = limparTelefone(data?.tutor2_telefone);
 
   const telefonePrincipal =
     telefoneValido(telefone1)
@@ -57,14 +50,14 @@ export default function PetView() {
       ? telefone2
       : null;
 
-  // 🔥 MENSAGEM CORRIGIDA (SEM ESTRANHEZA)
+  // 🔥 MENSAGEM CORRIGIDA
   function mensagemBase() {
     return encodeURIComponent(
       `Encontrei ${data.name || "esse pet"} em uma emergência.`
     );
   }
 
-  // 🔥 LOCALIZAÇÃO (MANTIDA, FUNCIONANDO)
+  // 📍 LOCALIZAÇÃO (mantida)
   function enviarLocalizacao(telefone) {
     if (!telefoneValido(telefone)) {
       alert("Telefone não disponível");
@@ -87,12 +80,7 @@ export default function PetView() {
       },
       () => {
         setLoadingLoc(false);
-
         window.location.href = `https://wa.me/55${telefone}?text=${mensagemBase()}`;
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
       }
     );
   }
@@ -121,7 +109,7 @@ export default function PetView() {
       {telefoneValido(telefonePrincipal) && (
         <div style={card}>
           <p style={label}>CONTATO PRINCIPAL</p>
-          <h3>{data.tutor1_nome || data.tutor2_nome || "Responsável"}</h3>
+          <h3>{data.tutor1_nome || data.tutor2_nome}</h3>
 
           <div style={botoes}>
             <a href={`tel:${telefonePrincipal}`} style={btnLigar}>
@@ -175,14 +163,91 @@ export default function PetView() {
         </div>
       )}
 
-      {/* RODAPÉ */}
       <p style={rodape}>
-        Este QR ajuda a encontrar pets perdidos 🐾  
-        Compartilhe com responsabilidade 🙏
+        Este QR ajuda a encontrar pets perdidos 🐾
       </p>
 
     </Container>
   );
 }
 
-/* ESTILOS (mantidos) */
+/* 🔥 ESTILOS RESTAURADOS */
+
+const header = {
+  textAlign: "center",
+  padding: 20,
+};
+
+const foto = {
+  width: 120,
+  height: 120,
+  borderRadius: "50%",
+  objectFit: "cover",
+  marginBottom: 10,
+};
+
+const nome = { margin: 0 };
+
+const petNome = {
+  margin: 0,
+  fontSize: 24,
+};
+
+const frase = {
+  color: "#666",
+};
+
+const card = {
+  background: "#fff",
+  padding: 15,
+  borderRadius: 15,
+  marginBottom: 15,
+};
+
+const botoes = {
+  display: "flex",
+  gap: 10,
+  marginTop: 10,
+};
+
+const btnLigar = {
+  flex: 1,
+  background: "#3498db",
+  color: "#fff",
+  padding: 10,
+  textAlign: "center",
+  borderRadius: 10,
+  textDecoration: "none",
+};
+
+const btnWhats = {
+  flex: 1,
+  background: "#2ecc71",
+  color: "#fff",
+  padding: 10,
+  textAlign: "center",
+  borderRadius: 10,
+  textDecoration: "none",
+};
+
+const btnLocal = {
+  width: "100%",
+  marginTop: 10,
+  padding: 10,
+  borderRadius: 10,
+  border: "none",
+  background: "#f39c12",
+  color: "#fff",
+};
+
+const label = {
+  fontSize: 12,
+  color: "#888",
+};
+
+const rodape = {
+  textAlign: "center",
+  fontSize: 12,
+  color: "#aaa",
+  marginTop: 20,
+};

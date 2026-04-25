@@ -13,41 +13,35 @@ export default function PessoaView() {
   }, []);
 
   async function carregar() {
-    try {
-      const { data: tag, error } = await supabase
-        .from("tags")
-        .select("*")
-        .eq("code", code)
-        .single();
+    const { data, error } = await supabase
+      .from("tags")
+      .select("*")
+      .eq("code", code)
+      .single();
 
-      if (error || !tag) {
-        alert("Código inválido");
-        window.location.href = "/";
-        return;
-      }
-
-      if (!tag.locked) {
-        window.location.href = `/escolha/${code}`;
-        return;
-      }
-
-      setData(tag);
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao carregar");
+    if (error || !data) {
+      window.location.href = "/";
+      return;
     }
+
+    if (!data.locked) {
+      window.location.href = `/escolha/${code}`;
+      return;
+    }
+
+    setData(data);
   }
 
   function limparTelefone(tel) {
     return (tel || "").replace(/\D/g, "");
   }
 
-  const telefone1 = limparTelefone(data?.tutor1_telefone);
-  const telefone2 = limparTelefone(data?.tutor2_telefone);
-
   function telefoneValido(tel) {
     return tel && tel.length >= 10;
   }
+
+  const telefone1 = limparTelefone(data?.tutor1_telefone);
+  const telefone2 = limparTelefone(data?.tutor2_telefone);
 
   const telefonePrincipal =
     telefoneValido(telefone1)
@@ -72,14 +66,14 @@ export default function PessoaView() {
     return idade;
   }
 
-  // 🔥 MENSAGEM PADRÃO CORRIGIDA
+  // 🔥 MENSAGEM CORRIGIDA
   function mensagemBase() {
     return encodeURIComponent(
       `Estou com ${data.name || "essa pessoa"} em uma emergência.`
     );
   }
 
-  // 🔥 LOCALIZAÇÃO (NÃO MEXER NA BASE)
+  // 📍 LOCALIZAÇÃO (mantido)
   function enviarLocalizacao(telefone) {
     if (!telefoneValido(telefone)) {
       alert("Telefone não disponível");
@@ -103,10 +97,6 @@ export default function PessoaView() {
       () => {
         setLoadingLoc(false);
         window.location.href = `https://wa.me/55${telefone}?text=${mensagemBase()}`;
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
       }
     );
   }
@@ -135,7 +125,7 @@ export default function PessoaView() {
         <p style={frase}>🚨 Em caso de emergência</p>
       </div>
 
-      {/* 🔥 BOTÃO SAMU CORRIGIDO */}
+      {/* 🔥 SAMU MELHORADO */}
       <a href="tel:192" style={btnSamu}>
         👉 Ligar SAMU (192)
       </a>
@@ -151,7 +141,7 @@ export default function PessoaView() {
       {telefoneValido(telefonePrincipal) && (
         <div style={card}>
           <p style={label}>CONTATO PRINCIPAL</p>
-          <h3>{data.tutor1_nome || data.tutor2_nome || "Responsável"}</h3>
+          <h3>{data.tutor1_nome || data.tutor2_nome}</h3>
 
           <div style={botoes}>
             <a href={`tel:${telefonePrincipal}`} style={btnLigar}>
@@ -217,12 +207,113 @@ export default function PessoaView() {
       )}
 
       <p style={rodape}>
-        Este QR ajuda em situações de emergência.
-        Use com responsabilidade 🙏
+        Este QR ajuda em situações de emergência 🙏
       </p>
 
     </Container>
   );
 }
 
-/* ESTILOS (mantidos) */
+/* 🔥 ESTILOS RESTAURADOS (ERRO RESOLVIDO AQUI) */
+
+const header = {
+  textAlign: "center",
+  padding: 20,
+};
+
+const foto = {
+  width: 120,
+  height: 120,
+  borderRadius: "50%",
+  objectFit: "cover",
+  marginBottom: 10,
+};
+
+const nome = { margin: 0 };
+
+const pessoaNome = {
+  margin: 0,
+  fontSize: 24,
+};
+
+const frase = {
+  color: "#666",
+};
+
+const idadeStyle = {
+  color: "#888",
+};
+
+const card = {
+  background: "#fff",
+  padding: 15,
+  borderRadius: 15,
+  marginBottom: 15,
+};
+
+const botoes = {
+  display: "flex",
+  gap: 10,
+  marginTop: 10,
+};
+
+const btnLigar = {
+  flex: 1,
+  background: "#3498db",
+  color: "#fff",
+  padding: 10,
+  textAlign: "center",
+  borderRadius: 10,
+  textDecoration: "none",
+};
+
+const btnWhats = {
+  flex: 1,
+  background: "#2ecc71",
+  color: "#fff",
+  padding: 10,
+  textAlign: "center",
+  borderRadius: 10,
+  textDecoration: "none",
+};
+
+const btnLocal = {
+  width: "100%",
+  marginTop: 10,
+  padding: 10,
+  borderRadius: 10,
+  border: "none",
+  background: "#f39c12",
+  color: "#fff",
+};
+
+const btnSamu = {
+  display: "block",
+  textAlign: "center",
+  padding: 15,
+  background: "#e74c3c",
+  color: "#fff",
+  borderRadius: 10,
+  textDecoration: "none",
+  marginBottom: 15,
+};
+
+const tipoBox = {
+  background: "#fff",
+  padding: 10,
+  borderRadius: 10,
+  marginBottom: 10,
+  textAlign: "center",
+};
+
+const label = {
+  fontSize: 12,
+  color: "#888",
+};
+
+const rodape = {
+  textAlign: "center",
+  fontSize: 12,
+  color: "#aaa",
+  marginTop: 20,
+};
