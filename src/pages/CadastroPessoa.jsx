@@ -1,4 +1,3 @@
-// force deploy
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
@@ -168,6 +167,8 @@ export default function CadastroPessoa() {
 
   return (
     <Container>
+
+      {/* FOTO */}
       <div
         style={fotoCircle}
         onClick={() => document.getElementById("fileInput").click()}
@@ -187,12 +188,115 @@ export default function CadastroPessoa() {
         />
       </div>
 
-      {/* RESTANTE IGUAL */}
+      {/* NOME */}
+      <label style={label}>Nome *</label>
+      <input value={nome} onChange={(e) => setNome(e.target.value)} style={input} />
+
+      {/* DATA */}
+      <label style={label}>Data de nascimento</label>
+
+      <input
+        placeholder="__/__/____"
+        value={dataNascTexto}
+        onChange={(e) => {
+          let v = e.target.value.replace(/\D/g, "");
+
+          if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
+          if (v.length > 5) v = v.slice(0, 5) + "/" + v.slice(5, 9);
+
+          setDataNascTexto(v);
+        }}
+        style={input}
+      />
+
+      <DatePicker
+        selected={dataNascObj}
+        onChange={(date) => setDataNascObj(date)}
+        dateFormat="dd/MM/yyyy"
+        showYearDropdown
+        scrollableYearDropdown
+        yearDropdownItemNumber={100}
+        maxDate={new Date()}
+        className="input"
+        placeholderText="Selecionar no calendário"
+      />
+
+      {/* TIPO SANGUÍNEO */}
+      <label style={label}>Tipo sanguíneo</label>
+      <select
+        value={tipoSanguineo}
+        onChange={(e) => setTipoSanguineo(e.target.value)}
+        style={input}
+      >
+        <option value="">Selecione</option>
+        <option>O+</option>
+        <option>O-</option>
+        <option>A+</option>
+        <option>A-</option>
+        <option>B+</option>
+        <option>B-</option>
+        <option>AB+</option>
+        <option>AB-</option>
+      </select>
+
+      {/* CONTATO 1 */}
+      <label style={label}>Contato principal *</label>
+      <input
+        placeholder="(99)99999-9999"
+        value={telefone1}
+        onChange={(e) =>
+          setTelefone1(e.target.value.replace(/[^0-9()\- ]/g, ""))
+        }
+        style={input}
+      />
+
+      <input
+        placeholder="Nome contato"
+        value={tutor1Nome}
+        onChange={(e) => setTutor1Nome(e.target.value)}
+        style={input}
+      />
+
+      {/* CONTATO 2 */}
+      <label style={label}>Contato secundário</label>
+      <input
+        placeholder="(99)99999-9999"
+        value={telefone2}
+        onChange={(e) =>
+          setTelefone2(e.target.value.replace(/[^0-9()\- ]/g, ""))
+        }
+        style={input}
+      />
+
+      <input
+        placeholder="Nome contato"
+        value={tutor2Nome}
+        onChange={(e) => setTutor2Nome(e.target.value)}
+        style={input}
+      />
+
+      {/* SAÚDE */}
+      <label style={label}>Comorbidades</label>
+      <input value={comorbidades} onChange={(e) => setComorbidades(e.target.value)} style={input} />
+
+      <label style={label}>Alergias</label>
+      <input value={alergias} onChange={(e) => setAlergias(e.target.value)} style={input} />
+
+      <label style={label}>Medicamentos</label>
+      <input value={medicamentos} onChange={(e) => setMedicamentos(e.target.value)} style={input} />
+
+      {/* BOTÃO */}
+      <button onClick={salvar} disabled={salvando} style={btnSalvar}>
+        {salvando ? "Salvando..." : "Salvar"}
+      </button>
+
+      <p style={obs}>*Obrigatório</p>
+
     </Container>
   );
 }
 
-/* ✅ AGORA FORA DA FUNÇÃO (CORRETO) */
+/* 🎨 ESTILOS */
 
 const fotoCircle = {
   width: 120,
@@ -216,4 +320,35 @@ const imgCircle = {
 const fotoTexto = {
   color: "#ff3b3b",
   fontWeight: 600,
+};
+
+const input = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 10,
+  border: "1px solid #ddd",
+  marginTop: 5,
+  marginBottom: 10,
+};
+
+const label = {
+  marginTop: 10,
+  display: "block",
+};
+
+const btnSalvar = {
+  width: "100%",
+  padding: 15,
+  borderRadius: 12,
+  background: "#ff3b3b",
+  color: "#fff",
+  border: "none",
+  marginTop: 20,
+};
+
+const obs = {
+  textAlign: "center",
+  fontSize: 12,
+  color: "#999",
+  marginTop: 10,
 };
