@@ -3,15 +3,20 @@ import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Container from "../components/Container";
 
-export default function CadastroPet() {
+export default function CadastroPessoa() {
   const { code } = useParams();
 
   const [nome, setNome] = useState("");
+  const [dataNascTexto, setDataNascTexto] = useState("");
+  const [tipoSanguineo, setTipoSanguineo] = useState("");
   const [telefone1, setTelefone1] = useState("");
   const [telefone2, setTelefone2] = useState("");
   const [tutor1Nome, setTutor1Nome] = useState("");
   const [tutor2Nome, setTutor2Nome] = useState("");
-  const [observacoes, setObservacoes] = useState("");
+
+  const [comorbidades, setComorbidades] = useState("");
+  const [alergias, setAlergias] = useState("");
+  const [medicamentos, setMedicamentos] = useState("");
 
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -23,7 +28,7 @@ export default function CadastroPet() {
     return limpo.length === 10 || limpo.length === 11;
   }
 
-  // 🔥 COMPRESSÃO CORRIGIDA (COM FALLBACK)
+  // 🔥 COMPRESSÃO
   function comprimirImagem(file) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -33,43 +38,28 @@ export default function CadastroPet() {
         img.src = e.target.result;
       };
 
-      img.onerror = () => {
-        resolve(file);
-      };
-
       img.onload = () => {
-        try {
-          const canvas = document.createElement("canvas");
+        const canvas = document.createElement("canvas");
 
-          const maxWidth = 1200;
-          const scale = Math.min(1, maxWidth / img.width);
+        const maxWidth = 1200;
+        const scale = maxWidth / img.width;
 
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
+        canvas.width = maxWidth;
+        canvas.height = img.height * scale;
 
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) {
-                resolve(file); // fallback mobile
-                return;
-              }
-
-              const compressedFile = new File([blob], file.name, {
-                type: "image/jpeg",
-              });
-
-              resolve(compressedFile);
-            },
-            "image/jpeg",
-            0.7
-          );
-        } catch (err) {
-          console.error("Erro compressão:", err);
-          resolve(file);
-        }
+        canvas.toBlob(
+          (blob) => {
+            const compressedFile = new File([blob], file.name, {
+              type: "image/jpeg",
+            });
+            resolve(compressedFile);
+          },
+          "image/jpeg",
+          0.7
+        );
       };
 
       reader.readAsDataURL(file);
@@ -86,11 +76,17 @@ export default function CadastroPet() {
     setPreview(URL.createObjectURL(compressed));
   }
 
+  function formatarDataISO(data) {
+    if (!data || data.length !== 10) return null;
+    const [dia, mes, ano] = data.split("/");
+    return `${ano}-${mes}-${dia}`;
+  }
+
   async function salvar() {
     if (salvando) return;
 
     if (!nome) {
-      alert("Preencha o nome do pet");
+      alert("Preencha o nome");
       return;
     }
 
@@ -112,26 +108,30 @@ export default function CadastroPet() {
       if (foto) {
         const fileName = `${code}-${Date.now()}.jpg`;
 
-        const { error: uploadError } = await supabase.storage
+        const { data, error: uploadError } = await supabase.storage
           .from("fotos")
           .upload(fileName, foto, {
             contentType: "image/jpeg",
             upsert: true,
           });
 
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
-            .from("fotos")
-            .getPublicUrl(fileName);
-
-          foto_url = publicUrlData.publicUrl;
-        } else {
-          console.error("Erro upload:", uploadError);
+        if (uploadError) {
+          console.error("ERRO UPLOAD:", uploadError);
+          alert("Erro ao enviar foto");
+          return;
         }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("fotos")
+          .getPublicUrl(fileName);
+
+        foto_url = publicUrlData.publicUrl;
       }
 
       const updateData = {
         name: nome,
+        data_nascimento: formatarDataISO(dataNascTexto),
+        tipo_sanguineo: tipoSanguineo,
 
         tutor1_nome: tutor1Nome,
         tutor1_telefone: telefone1,
@@ -139,9 +139,11 @@ export default function CadastroPet() {
         tutor2_nome: tutor2Nome,
         tutor2_telefone: telefone2,
 
-        observacoes,
+        comorbidades,
+        alergias,
+        medicamentos,
 
-        tipo: "pet",
+        tipo: "pessoa",
         locked: true,
       };
 
@@ -155,13 +157,11 @@ export default function CadastroPet() {
         .eq("code", code);
 
       if (error) {
-        console.error(error);
         alert("Erro ao salvar");
         return;
       }
 
-      window.location.href = `/pet/${code}`;
-
+      window.location.href = `/pessoa/${code}`;
     } catch (err) {
       console.error(err);
       alert("Erro inesperado");
@@ -176,7 +176,7 @@ export default function CadastroPet() {
       {/* FOTO */}
       <div
         style={fotoCircle}
-        onClick={() => document.getElementById("fileInputPet").click()}
+        onClick={() => document.getElementById("fileInput").click()}
       >
         {preview ? (
           <img src={preview} style={imgCircle} />
@@ -185,7 +185,7 @@ export default function CadastroPet() {
         )}
 
         <input
-          id="fileInputPet"
+          id="fileInput"
           type="file"
           accept="image/*"
           onChange={handleFoto}
@@ -194,12 +194,43 @@ export default function CadastroPet() {
       </div>
 
       {/* NOME */}
-      <label style={label}>Nome do pet *</label>
+      <label style={label}>Nome *</label>
+      <input value={nome} onChange={(e) => setNome(e.target.value)} style={input} />
+
+      {/* DATA */}
+      <label style={label}>Data de nascimento</label>
+
       <input
-        value={nome}
-        onChange={(e) => setNome(e.target.value)}
+        placeholder="__/__/____"
+        value={dataNascTexto}
+        onChange={(e) => {
+          let v = e.target.value.replace(/\D/g, "");
+
+          if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
+          if (v.length > 5) v = v.slice(0, 5) + "/" + v.slice(5, 9);
+
+          setDataNascTexto(v);
+        }}
         style={input}
       />
+
+      {/* TIPO SANGUÍNEO */}
+      <label style={label}>Tipo sanguíneo</label>
+      <select
+        value={tipoSanguineo}
+        onChange={(e) => setTipoSanguineo(e.target.value)}
+        style={input}
+      >
+        <option value="">Selecione</option>
+        <option>O+</option>
+        <option>O-</option>
+        <option>A+</option>
+        <option>A-</option>
+        <option>B+</option>
+        <option>B-</option>
+        <option>AB+</option>
+        <option>AB-</option>
+      </select>
 
       {/* CONTATO 1 */}
       <label style={label}>Contato principal *</label>
@@ -237,13 +268,15 @@ export default function CadastroPet() {
         style={input}
       />
 
-      {/* OBSERVAÇÕES */}
-      <label style={label}>Informações importantes</label>
-      <input
-        value={observacoes}
-        onChange={(e) => setObservacoes(e.target.value)}
-        style={input}
-      />
+      {/* SAÚDE */}
+      <label style={label}>Comorbidades</label>
+      <input value={comorbidades} onChange={(e) => setComorbidades(e.target.value)} style={input} />
+
+      <label style={label}>Alergias</label>
+      <input value={alergias} onChange={(e) => setAlergias(e.target.value)} style={input} />
+
+      <label style={label}>Medicamentos</label>
+      <input value={medicamentos} onChange={(e) => setMedicamentos(e.target.value)} style={input} />
 
       {/* BOTÃO */}
       <button onClick={salvar} disabled={salvando} style={btnSalvar}>
@@ -256,7 +289,8 @@ export default function CadastroPet() {
   );
 }
 
-/* estilos mantidos */
+/* 🎨 ESTILOS */
+
 const fotoCircle = {
   width: 120,
   height: 120,
