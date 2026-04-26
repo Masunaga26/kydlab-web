@@ -125,30 +125,35 @@ export default function CadastroPessoa() {
         }
       }
 
+      // 🔥 CORREÇÃO AQUI (NÃO SOBRESCREVE COM NULL)
+      const updateData = {
+        name: nome,
+        data_nascimento: dataNascObj
+          ? dataNascObj.toISOString().split("T")[0]
+          : formatarDataISO(dataNascTexto),
+        tipo_sanguineo: tipoSanguineo,
+
+        tutor1_nome: tutor1Nome,
+        tutor1_telefone: telefone1,
+
+        tutor2_nome: tutor2Nome,
+        tutor2_telefone: telefone2,
+
+        comorbidades,
+        alergias,
+        medicamentos,
+
+        tipo: "pessoa",
+        locked: true,
+      };
+
+      if (foto_url) {
+        updateData.foto_url = foto_url;
+      }
+
       const { error } = await supabase
         .from("tags")
-        .update({
-          name: nome,
-          data_nascimento: dataNascObj
-            ? dataNascObj.toISOString().split("T")[0]
-            : formatarDataISO(dataNascTexto),
-          tipo_sanguineo: tipoSanguineo,
-
-          tutor1_nome: tutor1Nome,
-          tutor1_telefone: telefone1,
-
-          tutor2_nome: tutor2Nome,
-          tutor2_telefone: telefone2,
-
-          comorbidades,
-          alergias,
-          medicamentos,
-
-          foto_url,
-
-          tipo: "pessoa",
-          locked: true,
-        })
+        .update(updateData)
         .eq("code", code);
 
       if (error) {
