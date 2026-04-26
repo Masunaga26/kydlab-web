@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import Container from "../components/Container";
+
+import TapLayout, {
+  TapHero,
+  TapCard,
+  TapSectionTitle,
+  TapSecurityNotice,
+  TapWarningBox,
+  TapPrimaryButton,
+} from "../components/TapLayout";
 
 export default function CadastroPessoa() {
   const { code } = useParams();
@@ -109,7 +117,7 @@ export default function CadastroPessoa() {
         const fileName = `${code}-${Date.now()}.jpg`;
 
         const { data, error: uploadError } = await supabase.storage
-          .from("profile-photos") // ✅ CORRIGIDO
+          .from("profile-photos")
           .upload(fileName, foto, {
             contentType: "image/jpeg",
             upsert: true,
@@ -122,7 +130,7 @@ export default function CadastroPessoa() {
         }
 
         const { data: publicUrlData } = supabase.storage
-          .from("profile-photos") // ✅ CORRIGIDO
+          .from("profile-photos")
           .getPublicUrl(fileName);
 
         foto_url = publicUrlData.publicUrl;
@@ -171,136 +179,220 @@ export default function CadastroPessoa() {
   }
 
   return (
-    <Container>
+    <TapLayout footerType="simple" productType="pessoa" code={code}>
+      <TapHero
+        variant="form"
+        title="Cadastre seus dados"
+        subtitle="Ficha médica de emergência"
+        code={code}
+      />
 
-      {/* FOTO */}
-      <div
-        style={fotoCircle}
-        onClick={() => document.getElementById("fileInput").click()}
-      >
-        {preview ? (
-          <img src={preview} style={imgCircle} />
-        ) : (
-          <span style={fotoTexto}>Adicionar foto</span>
-        )}
+      <TapSecurityNotice>
+        Não pedimos dados sensíveis como documentos ou dados bancários.
+      </TapSecurityNotice>
 
-        <input
-          id="fileInput"
-          type="file"
-          accept="image/*"
-          onChange={handleFoto}
-          style={{ display: "none" }}
+      <TapCard>
+        <TapSectionTitle
+          icon="👤"
+          title="Dados Pessoais"
+          subtitle="Essas informações serão exibidas em caso de emergência."
         />
-      </div>
 
-      {/* NOME */}
-      <label style={label}>Nome *</label>
-      <input value={nome} onChange={(e) => setNome(e.target.value)} style={input} />
+        <div style={photoRow}>
+          <div
+            style={fotoCircle}
+            onClick={() => document.getElementById("fileInput").click()}
+          >
+            {preview ? (
+              <img src={preview} style={imgCircle} alt="Prévia da foto" />
+            ) : (
+              <span style={fotoIcon}>👤</span>
+            )}
 
-      {/* DATA */}
-      <label style={label}>Data de nascimento</label>
+            <input
+              id="fileInput"
+              type="file"
+              accept="image/*"
+              onChange={handleFoto}
+              style={{ display: "none" }}
+            />
+          </div>
 
-      <input
-        placeholder="__/__/____"
-        value={dataNascTexto}
-        onChange={(e) => {
-          let v = e.target.value.replace(/\D/g, "");
+          <div style={photoTextBox}>
+            <button
+              type="button"
+              onClick={() => document.getElementById("fileInput").click()}
+              style={uploadButton}
+            >
+              ⬆️ Enviar foto
+            </button>
 
-          if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
-          if (v.length > 5) v = v.slice(0, 5) + "/" + v.slice(5, 9);
+            <p style={uploadHint}>JPG ou PNG, máx 5MB</p>
+          </div>
+        </div>
 
-          setDataNascTexto(v);
-        }}
-        style={input}
-      />
+        <label style={label}>Nome completo *</label>
+        <input
+          placeholder="Seu nome completo"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          style={input}
+        />
 
-      {/* TIPO SANGUÍNEO */}
-      <label style={label}>Tipo sanguíneo</label>
-      <select
-        value={tipoSanguineo}
-        onChange={(e) => setTipoSanguineo(e.target.value)}
-        style={input}
-      >
-        <option value="">Selecione</option>
-        <option>O+</option>
-        <option>O-</option>
-        <option>A+</option>
-        <option>A-</option>
-        <option>B+</option>
-        <option>B-</option>
-        <option>AB+</option>
-        <option>AB-</option>
-      </select>
+        <div style={twoColumns}>
+          <div>
+            <label style={label}>Nascimento</label>
+            <input
+              placeholder="__/__/____"
+              value={dataNascTexto}
+              onChange={(e) => {
+                let v = e.target.value.replace(/\D/g, "");
 
-      {/* CONTATO 1 */}
-      <label style={label}>Contato principal *</label>
-      <input
-        placeholder="(99)99999-9999"
-        value={telefone1}
-        onChange={(e) =>
-          setTelefone1(e.target.value.replace(/[^0-9()\- ]/g, ""))
-        }
-        style={input}
-      />
+                if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
+                if (v.length > 5) v = v.slice(0, 5) + "/" + v.slice(5, 9);
 
-      <input
-        placeholder="Nome contato"
-        value={tutor1Nome}
-        onChange={(e) => setTutor1Nome(e.target.value)}
-        style={input}
-      />
+                setDataNascTexto(v);
+              }}
+              style={input}
+            />
+          </div>
 
-      {/* CONTATO 2 */}
-      <label style={label}>Contato secundário</label>
-      <input
-        placeholder="(99)99999-9999"
-        value={telefone2}
-        onChange={(e) =>
-          setTelefone2(e.target.value.replace(/[^0-9()\- ]/g, ""))
-        }
-        style={input}
-      />
+          <div>
+            <label style={label}>Tipo sanguíneo</label>
+            <select
+              value={tipoSanguineo}
+              onChange={(e) => setTipoSanguineo(e.target.value)}
+              style={input}
+            >
+              <option value="">Selecione</option>
+              <option>O+</option>
+              <option>O-</option>
+              <option>A+</option>
+              <option>A-</option>
+              <option>B+</option>
+              <option>B-</option>
+              <option>AB+</option>
+              <option>AB-</option>
+            </select>
+          </div>
+        </div>
+      </TapCard>
 
-      <input
-        placeholder="Nome contato"
-        value={tutor2Nome}
-        onChange={(e) => setTutor2Nome(e.target.value)}
-        style={input}
-      />
+      <TapCard>
+        <TapSectionTitle
+          icon="〽️"
+          title="Dados Médicos"
+          subtitle="Essas informações ajudam em uma situação de emergência."
+        />
 
-      {/* SAÚDE */}
-      <label style={label}>Comorbidades</label>
-      <input value={comorbidades} onChange={(e) => setComorbidades(e.target.value)} style={input} />
+        <label style={label}>Comorbidades</label>
+        <textarea
+          placeholder="Ex: Diabetes tipo 2, hipertensão..."
+          value={comorbidades}
+          onChange={(e) => setComorbidades(e.target.value)}
+          style={textarea}
+        />
 
-      <label style={label}>Alergias</label>
-      <input value={alergias} onChange={(e) => setAlergias(e.target.value)} style={input} />
+        <label style={label}>Alergias</label>
+        <textarea
+          placeholder="Ex: Penicilina, dipirona, amendoim..."
+          value={alergias}
+          onChange={(e) => setAlergias(e.target.value)}
+          style={textarea}
+        />
 
-      <label style={label}>Medicamentos</label>
-      <input value={medicamentos} onChange={(e) => setMedicamentos(e.target.value)} style={input} />
+        <label style={label}>Medicamentos de uso contínuo</label>
+        <textarea
+          placeholder="Ex: Metformina 850mg 2x/dia..."
+          value={medicamentos}
+          onChange={(e) => setMedicamentos(e.target.value)}
+          style={textarea}
+        />
+      </TapCard>
 
-      {/* BOTÃO */}
-      <button onClick={salvar} disabled={salvando} style={btnSalvar}>
-        {salvando ? "Salvando..." : "Salvar"}
-      </button>
+      <TapCard>
+        <TapSectionTitle icon="📞" title="Contatos de Emergência" />
 
-      <p style={obs}>*Obrigatório</p>
+        <div style={contactBox}>
+          <h3 style={contactTitle}>Contato 1</h3>
 
-    </Container>
+          <label style={labelSmall}>Nome</label>
+          <input
+            placeholder="Nome do contato"
+            value={tutor1Nome}
+            onChange={(e) => setTutor1Nome(e.target.value)}
+            style={input}
+          />
+
+          <label style={labelSmall}>Telefone *</label>
+          <input
+            placeholder="(00) 00000-0000"
+            value={telefone1}
+            onChange={(e) =>
+              setTelefone1(e.target.value.replace(/[^0-9()\- ]/g, ""))
+            }
+            style={input}
+          />
+        </div>
+
+        <div style={contactBox}>
+          <h3 style={contactTitle}>Contato 2</h3>
+
+          <label style={labelSmall}>Nome</label>
+          <input
+            placeholder="Nome do contato"
+            value={tutor2Nome}
+            onChange={(e) => setTutor2Nome(e.target.value)}
+            style={input}
+          />
+
+          <label style={labelSmall}>Telefone</label>
+          <input
+            placeholder="(00) 00000-0000"
+            value={telefone2}
+            onChange={(e) =>
+              setTelefone2(e.target.value.replace(/[^0-9()\- ]/g, ""))
+            }
+            style={input}
+          />
+        </div>
+      </TapCard>
+
+      <TapWarningBox>
+        Para segurança e eficiência do produto, após salvar os dados não são
+        alterados. Revise antes de salvar.
+      </TapWarningBox>
+
+      <TapPrimaryButton onClick={salvar} disabled={salvando}>
+        {salvando ? "Salvando..." : "💾 Salvar dados"}
+      </TapPrimaryButton>
+
+      <p style={obs}>* Campos obrigatórios</p>
+    </TapLayout>
   );
 }
 
-/* 🎨 ESTILOS */
+/* 🎨 ESTILOS VISUAIS DA TELA */
+
+const photoRow = {
+  display: "flex",
+  alignItems: "center",
+  gap: 20,
+  marginBottom: 24,
+};
 
 const fotoCircle = {
   width: 120,
   height: 120,
+  minWidth: 120,
   borderRadius: "50%",
-  background: "#ffeaea",
+  background: "#fbe2e2",
+  border: "5px solid #f3caca",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  margin: "20px auto",
   cursor: "pointer",
+  overflow: "hidden",
 };
 
 const imgCircle = {
@@ -310,38 +402,96 @@ const imgCircle = {
   objectFit: "cover",
 };
 
-const fotoTexto = {
-  color: "#ff3b3b",
-  fontWeight: 600,
+const fotoIcon = {
+  color: "#ef1c1c",
+  fontSize: 48,
+};
+
+const photoTextBox = {
+  flex: 1,
+};
+
+const uploadButton = {
+  width: "auto",
+  background: "transparent",
+  color: "#ef1c1c",
+  border: "none",
+  padding: 0,
+  margin: 0,
+  fontWeight: 800,
+  fontSize: 16,
+  cursor: "pointer",
+  textAlign: "left",
+};
+
+const uploadHint = {
+  margin: "10px 0 0",
+  color: "#777",
+  fontSize: 14,
+};
+
+const label = {
+  display: "block",
+  margin: "16px 0 8px",
+  color: "#111",
+  fontWeight: 800,
+  fontSize: 15,
+};
+
+const labelSmall = {
+  display: "block",
+  margin: "16px 0 8px",
+  color: "#666",
+  fontWeight: 850,
+  fontSize: 13,
+  textTransform: "uppercase",
+  letterSpacing: ".4px",
 };
 
 const input = {
   width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  marginTop: 5,
-  marginBottom: 10,
+  minHeight: 56,
+  padding: "14px 16px",
+  borderRadius: 14,
+  border: "1px solid #e5e5e5",
+  background: "#fff",
+  fontSize: 16,
+  color: "#222",
+  outline: "none",
+  margin: 0,
 };
 
-const label = {
-  marginTop: 10,
-  display: "block",
+const textarea = {
+  ...input,
+  minHeight: 108,
+  resize: "vertical",
+  lineHeight: 1.4,
 };
 
-const btnSalvar = {
-  width: "100%",
-  padding: 15,
-  borderRadius: 12,
-  background: "#ff3b3b",
-  color: "#fff",
-  border: "none",
-  marginTop: 20,
+const twoColumns = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 12,
+};
+
+const contactBox = {
+  background: "#fafafa",
+  border: "1px solid #f0f0f0",
+  borderRadius: 18,
+  padding: 18,
+  marginTop: 16,
+};
+
+const contactTitle = {
+  margin: "0 0 12px",
+  color: "#d71920",
+  fontSize: 18,
+  fontWeight: 900,
 };
 
 const obs = {
   textAlign: "center",
   fontSize: 12,
   color: "#999",
-  marginTop: 10,
+  margin: "12px 0 0",
 };

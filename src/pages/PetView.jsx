@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import Container from "../components/Container";
+
+import TapLayout, {
+  TapHero,
+  TapCard,
+  TapActionRow,
+  TapCallButton,
+  TapWhatsButton,
+} from "../components/TapLayout";
 
 export default function PetView() {
   const { code } = useParams();
@@ -82,170 +89,130 @@ export default function PetView() {
     );
   }
 
-  if (!data) return <p style={{ textAlign: "center" }}>Carregando...</p>;
+  if (!data) {
+    return (
+      <TapLayout footerType="simple" productType="pet" code={code}>
+        <p style={loading}>Carregando...</p>
+      </TapLayout>
+    );
+  }
 
-  // 🔥 CORREÇÃO FINAL DA FOTO (segura + anti-cache)
   const fotoUrlFinal =
     data?.foto_url && data.foto_url !== ""
       ? `${data.foto_url}?t=${Date.now()}`
       : "https://via.placeholder.com/150";
 
   return (
-    <Container>
+    <TapLayout footerType="view" productType="pet" code={code}>
+      <TapHero
+        variant="view"
+        photoUrl={fotoUrlFinal}
+        eyebrow="Oi, me chamo"
+        title={(data.name || "Pet").toUpperCase()}
+        subtitle="Me ajuda voltar pra casa!"
+      />
 
-      {/* HEADER */}
-      <div style={header}>
-        <img
-          src={fotoUrlFinal}
-          style={foto}
-        />
-
-        <h2 style={nome}>Oi, me chamo</h2>
-        <h1 style={petNome}>{data.name || "Pet"}</h1>
-
-        <p style={frase}>
-          Estou perdido 😢 Me ajude a voltar pra casa!
-        </p>
-      </div>
-
-      {/* CONTATO PRINCIPAL */}
       {telefoneValido(telefonePrincipal) && (
-        <div style={card}>
+        <TapCard>
           <p style={label}>TUTOR 1</p>
-          <h3>{data.tutor1_nome || data.tutor2_nome}</h3>
+          <h3 style={contactName}>
+            {data.tutor1_nome || data.tutor2_nome || "Responsável"}
+          </h3>
 
-          <div style={botoes}>
-            <a href={`tel:${telefonePrincipal}`} style={btnLigar}>
-              📞 Ligar
-            </a>
+          <TapActionRow>
+            <TapCallButton href={`tel:${telefonePrincipal}`}>
+              Ligar Agora
+            </TapCallButton>
 
-            <a
+            <TapWhatsButton
               href={`https://wa.me/55${telefonePrincipal}?text=${mensagemBase()}`}
-              style={btnWhats}
             >
-              💬 WhatsApp
-            </a>
-          </div>
+              WhatsApp
+            </TapWhatsButton>
+          </TapActionRow>
 
           <button
+            type="button"
             style={btnLocal}
             onClick={() => enviarLocalizacao(telefonePrincipal)}
           >
             {loadingLoc ? "Enviando..." : "📍 Enviar localização"}
           </button>
-        </div>
+        </TapCard>
       )}
 
-      {/* CONTATO 2 */}
-      {telefoneValido(telefone2) &&
-        telefone2 !== telefonePrincipal && (
-          <div style={card}>
-            <p style={label}>TUTOR 2</p>
-            <h3>{data.tutor2_nome}</h3>
+      {telefoneValido(telefone2) && telefone2 !== telefonePrincipal && (
+        <TapCard>
+          <p style={label}>TUTOR 2</p>
+          <h3 style={contactName}>
+            {data.tutor2_nome || "Responsável"}
+          </h3>
 
-            <div style={botoes}>
-              <a href={`tel:${telefone2}`} style={btnLigar}>
-                📞 Ligar
-              </a>
+          <TapActionRow>
+            <TapCallButton href={`tel:${telefone2}`}>
+              Ligar Agora
+            </TapCallButton>
 
-              <a
-                href={`https://wa.me/55${telefone2}?text=${mensagemBase()}`}
-                style={btnWhats}
-              >
-                💬 WhatsApp
-              </a>
-            </div>
-          </div>
-        )}
+            <TapWhatsButton
+              href={`https://wa.me/55${telefone2}?text=${mensagemBase()}`}
+            >
+              WhatsApp
+            </TapWhatsButton>
+          </TapActionRow>
+        </TapCard>
+      )}
 
-      {/* OBSERVAÇÕES */}
       {data.observacoes && (
-        <div style={card}>
-          <p style={label}>INFORMAÇÕES IMPORTANTES</p>
-          <p>{data.observacoes}</p>
-        </div>
+        <TapCard>
+          <p style={label}>CONDIÇÕES ESPECIAIS / OBSERVAÇÕES</p>
+          <p style={infoText}>{data.observacoes}</p>
+        </TapCard>
       )}
-
-      <p style={rodape}>
-        Este QR ajuda a encontrar pets perdidos 🐾
-      </p>
-
-    </Container>
+    </TapLayout>
   );
 }
 
-/* 🎨 ESTILOS MANTIDOS */
+/* 🎨 ESTILO VISUAL DA VIEW PET */
 
-const header = { textAlign: "center", padding: 20 };
-
-const foto = {
-  width: 120,
-  height: 120,
-  borderRadius: "50%",
-  objectFit: "cover",
-  marginBottom: 10,
+const loading = {
+  textAlign: "center",
+  padding: 30,
+  color: "#777",
 };
 
-const nome = { margin: 0 };
+const label = {
+  margin: "0 0 10px",
+  fontSize: 13,
+  color: "#777",
+  fontWeight: 900,
+  textTransform: "uppercase",
+  letterSpacing: ".5px",
+};
 
-const petNome = {
+const contactName = {
   margin: 0,
-  fontSize: 24,
-};
-
-const frase = { color: "#666" };
-
-const card = {
-  background: "#fff",
-  padding: 15,
-  borderRadius: 15,
-  marginBottom: 15,
-};
-
-const botoes = {
-  display: "flex",
-  gap: 10,
-  marginTop: 10,
-};
-
-const btnLigar = {
-  flex: 1,
-  background: "#e53935",
-  color: "#fff",
-  padding: 10,
-  textAlign: "center",
-  borderRadius: 10,
-  textDecoration: "none",
-};
-
-const btnWhats = {
-  flex: 1,
-  background: "#2ecc71",
-  color: "#fff",
-  padding: 10,
-  textAlign: "center",
-  borderRadius: 10,
-  textDecoration: "none",
+  fontSize: 26,
+  color: "#111",
+  fontWeight: 950,
 };
 
 const btnLocal = {
   width: "100%",
-  marginTop: 10,
-  padding: 10,
-  borderRadius: 10,
+  marginTop: 12,
+  minHeight: 54,
+  borderRadius: 14,
   border: "none",
-  background: "#e53935",
+  background: "#ef1c1c",
   color: "#fff",
+  fontWeight: 900,
+  fontSize: 16,
+  cursor: "pointer",
 };
 
-const label = {
-  fontSize: 12,
-  color: "#888",
-};
-
-const rodape = {
-  textAlign: "center",
-  fontSize: 12,
-  color: "#aaa",
-  marginTop: 20,
+const infoText = {
+  margin: 0,
+  color: "#333",
+  fontSize: 18,
+  lineHeight: 1.45,
+  fontWeight: 500,
 };

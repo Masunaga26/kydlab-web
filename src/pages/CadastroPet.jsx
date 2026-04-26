@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import Container from "../components/Container";
+
+import TapLayout, {
+  TapHero,
+  TapCard,
+  TapSectionTitle,
+  TapSecurityNotice,
+  TapWarningBox,
+  TapPrimaryButton,
+} from "../components/TapLayout";
 
 export default function CadastroPet() {
   const { code } = useParams();
@@ -98,7 +106,7 @@ export default function CadastroPet() {
         const fileName = `${code}-${Date.now()}.jpg`;
 
         const { error: uploadError } = await supabase.storage
-          .from("profile-photos") // ✅ CORRIGIDO
+          .from("profile-photos")
           .upload(fileName, foto, {
             contentType: "image/jpeg",
             upsert: true,
@@ -111,7 +119,7 @@ export default function CadastroPet() {
         }
 
         const { data: publicUrlData } = supabase.storage
-          .from("profile-photos") // ✅ CORRIGIDO
+          .from("profile-photos")
           .getPublicUrl(fileName);
 
         foto_url = publicUrlData.publicUrl;
@@ -157,103 +165,170 @@ export default function CadastroPet() {
   }
 
   return (
-    <Container>
+    <TapLayout footerType="simple" productType="pet" code={code}>
+      <TapHero
+        variant="form"
+        title="Cadastre os dados"
+        subtitle="Identificação pet de emergência"
+        code={code}
+      />
 
-      {/* FOTO */}
-      <div
-        style={fotoCircle}
-        onClick={() => document.getElementById("fileInputPet").click()}
-      >
-        {preview ? (
-          <img src={preview} style={imgCircle} />
-        ) : (
-          <span style={fotoTexto}>Enviar foto</span>
-        )}
+      <TapSecurityNotice>
+        Não pedimos dados sensíveis como documentos ou dados bancários.
+      </TapSecurityNotice>
 
-        <input
-          id="fileInputPet"
-          type="file"
-          accept="image/*"
-          onChange={handleFoto}
-          style={{ display: "none" }}
+      <TapCard>
+        <TapSectionTitle
+          icon="🐾"
+          title="Dados do Pet"
+          subtitle="Essas informações ajudam a identificar e devolver o pet com mais rapidez."
         />
-      </div>
 
-      {/* NOME */}
-      <label style={label}>Nome do pet *</label>
-      <input
-        value={nome}
-        onChange={(e) => setNome(e.target.value)}
-        style={input}
-      />
+        <div style={photoRow}>
+          <div
+            style={fotoCircle}
+            onClick={() => document.getElementById("fileInputPet").click()}
+          >
+            {preview ? (
+              <img src={preview} style={imgCircle} alt="Prévia do pet" />
+            ) : (
+              <span style={fotoIcon}>🐶</span>
+            )}
 
-      {/* CONTATO 1 */}
-      <label style={label}>Contato principal *</label>
-      <input
-        placeholder="(99)99999-9999"
-        value={telefone1}
-        onChange={(e) =>
-          setTelefone1(e.target.value.replace(/[^0-9()\- ]/g, ""))
-        }
-        style={input}
-      />
+            <input
+              id="fileInputPet"
+              type="file"
+              accept="image/*"
+              onChange={handleFoto}
+              style={{ display: "none" }}
+            />
+          </div>
 
-      <input
-        placeholder="Nome contato"
-        value={tutor1Nome}
-        onChange={(e) => setTutor1Nome(e.target.value)}
-        style={input}
-      />
+          <div style={photoTextBox}>
+            <button
+              type="button"
+              onClick={() => document.getElementById("fileInputPet").click()}
+              style={uploadButton}
+            >
+              ⬆️ Enviar foto
+            </button>
 
-      {/* CONTATO 2 */}
-      <label style={label}>Contato secundário</label>
-      <input
-        placeholder="(99)99999-9999"
-        value={telefone2}
-        onChange={(e) =>
-          setTelefone2(e.target.value.replace(/[^0-9()\- ]/g, ""))
-        }
-        style={input}
-      />
+            <p style={uploadHint}>JPG ou PNG, máx 5MB</p>
+          </div>
+        </div>
 
-      <input
-        placeholder="Nome contato"
-        value={tutor2Nome}
-        onChange={(e) => setTutor2Nome(e.target.value)}
-        style={input}
-      />
+        <label style={label}>Nome do pet *</label>
+        <input
+          placeholder="Nome do pet"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          style={input}
+        />
+      </TapCard>
 
-      {/* OBSERVAÇÕES */}
-      <label style={label}>Informações importantes</label>
-      <input
-        value={observacoes}
-        onChange={(e) => setObservacoes(e.target.value)}
-        style={input}
-      />
+      <TapCard>
+        <TapSectionTitle
+          icon="📞"
+          title="Contatos dos Tutores"
+          subtitle="Esses contatos serão usados para ajudar o pet a voltar para casa."
+        />
 
-      {/* BOTÃO */}
-      <button onClick={salvar} disabled={salvando} style={btnSalvar}>
-        {salvando ? "Salvando..." : "Salvar"}
-      </button>
+        <div style={contactBox}>
+          <h3 style={contactTitle}>Tutor 1</h3>
 
-      <p style={obs}>*Obrigatório</p>
+          <label style={labelSmall}>Nome</label>
+          <input
+            placeholder="Nome do tutor"
+            value={tutor1Nome}
+            onChange={(e) => setTutor1Nome(e.target.value)}
+            style={input}
+          />
 
-    </Container>
+          <label style={labelSmall}>Telefone *</label>
+          <input
+            placeholder="(00) 00000-0000"
+            value={telefone1}
+            onChange={(e) =>
+              setTelefone1(e.target.value.replace(/[^0-9()\- ]/g, ""))
+            }
+            style={input}
+          />
+        </div>
+
+        <div style={contactBox}>
+          <h3 style={contactTitle}>Tutor 2</h3>
+
+          <label style={labelSmall}>Nome</label>
+          <input
+            placeholder="Nome do tutor"
+            value={tutor2Nome}
+            onChange={(e) => setTutor2Nome(e.target.value)}
+            style={input}
+          />
+
+          <label style={labelSmall}>Telefone</label>
+          <input
+            placeholder="(00) 00000-0000"
+            value={telefone2}
+            onChange={(e) =>
+              setTelefone2(e.target.value.replace(/[^0-9()\- ]/g, ""))
+            }
+            style={input}
+          />
+        </div>
+      </TapCard>
+
+      <TapCard>
+        <TapSectionTitle
+          icon="🩺"
+          title="Informações Importantes"
+          subtitle="Adicione observações que possam ajudar quem encontrar o pet."
+        />
+
+        <label style={label}>Condições especiais, comportamento ou observações</label>
+        <textarea
+          placeholder="Ex: Idoso e dócil, usa medicação, assusta com barulho..."
+          value={observacoes}
+          onChange={(e) => setObservacoes(e.target.value)}
+          style={textarea}
+        />
+      </TapCard>
+
+      <TapWarningBox>
+        Para segurança e eficiência do produto, após salvar os dados não são
+        alterados. Revise antes de salvar.
+      </TapWarningBox>
+
+      <TapPrimaryButton onClick={salvar} disabled={salvando}>
+        {salvando ? "Salvando..." : "💾 Salvar dados"}
+      </TapPrimaryButton>
+
+      <p style={obs}>* Campos obrigatórios</p>
+    </TapLayout>
   );
 }
 
-/* 🎨 ESTILOS */
+/* 🎨 ESTILOS VISUAIS DA TELA */
+
+const photoRow = {
+  display: "flex",
+  alignItems: "center",
+  gap: 20,
+  marginBottom: 24,
+};
 
 const fotoCircle = {
   width: 120,
   height: 120,
+  minWidth: 120,
   borderRadius: "50%",
-  background: "#ffeaea",
+  background: "#fbe2e2",
+  border: "5px solid #f3caca",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  margin: "20px auto",
   cursor: "pointer",
+  overflow: "hidden",
 };
 
 const imgCircle = {
@@ -263,38 +338,89 @@ const imgCircle = {
   objectFit: "cover",
 };
 
-const fotoTexto = {
-  color: "#ff3b3b",
-  fontWeight: 600,
+const fotoIcon = {
+  fontSize: 44,
+};
+
+const photoTextBox = {
+  flex: 1,
+};
+
+const uploadButton = {
+  width: "auto",
+  background: "transparent",
+  color: "#ef1c1c",
+  border: "none",
+  padding: 0,
+  margin: 0,
+  fontWeight: 800,
+  fontSize: 16,
+  cursor: "pointer",
+  textAlign: "left",
+};
+
+const uploadHint = {
+  margin: "10px 0 0",
+  color: "#777",
+  fontSize: 14,
+};
+
+const label = {
+  display: "block",
+  margin: "16px 0 8px",
+  color: "#111",
+  fontWeight: 800,
+  fontSize: 15,
+};
+
+const labelSmall = {
+  display: "block",
+  margin: "16px 0 8px",
+  color: "#666",
+  fontWeight: 850,
+  fontSize: 13,
+  textTransform: "uppercase",
+  letterSpacing: ".4px",
 };
 
 const input = {
   width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  marginTop: 5,
-  marginBottom: 10,
+  minHeight: 56,
+  padding: "14px 16px",
+  borderRadius: 14,
+  border: "1px solid #e5e5e5",
+  background: "#fff",
+  fontSize: 16,
+  color: "#222",
+  outline: "none",
+  margin: 0,
 };
 
-const label = {
-  marginTop: 10,
-  display: "block",
+const textarea = {
+  ...input,
+  minHeight: 108,
+  resize: "vertical",
+  lineHeight: 1.4,
 };
 
-const btnSalvar = {
-  width: "100%",
-  padding: 15,
-  borderRadius: 12,
-  background: "#ff3b3b",
-  color: "#fff",
-  border: "none",
-  marginTop: 20,
+const contactBox = {
+  background: "#fafafa",
+  border: "1px solid #f0f0f0",
+  borderRadius: 18,
+  padding: 18,
+  marginTop: 16,
+};
+
+const contactTitle = {
+  margin: "0 0 12px",
+  color: "#d71920",
+  fontSize: 18,
+  fontWeight: 900,
 };
 
 const obs = {
   textAlign: "center",
   fontSize: 12,
   color: "#999",
-  marginTop: 10,
+  margin: "12px 0 0",
 };

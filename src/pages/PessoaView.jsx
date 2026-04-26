@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import Container from "../components/Container";
+
+import TapLayout, {
+  TapCard,
+  TapSectionTitle,
+  TapActionRow,
+  TapCallButton,
+  TapWhatsButton,
+} from "../components/TapLayout";
 
 export default function PessoaView() {
   const { code } = useParams();
@@ -98,216 +105,308 @@ export default function PessoaView() {
     );
   }
 
-  if (!data) return <p style={{ textAlign: "center" }}>Carregando...</p>;
+  if (!data) {
+    return (
+      <TapLayout footerType="simple" productType="pessoa" code={code}>
+        <p style={loading}>Carregando...</p>
+      </TapLayout>
+    );
+  }
+
+  const idade = calcularIdade(data.data_nascimento);
+
+  const fotoUrl =
+    data?.foto_url && data.foto_url !== ""
+      ? data.foto_url + "?t=" + Date.now()
+      : "https://via.placeholder.com/150";
 
   return (
-    <Container>
+    <TapLayout footerType="view" productType="pessoa" code={code}>
+      <section style={medicalHeader}>
+        <div style={headerTop}>
+          <div style={photoWrap}>
+            <img src={fotoUrl} style={foto} alt={data.name || "Pessoa"} />
+          </div>
 
-      {/* HEADER */}
-      <div style={header}>
-        <img
-          src={
-            data?.foto_url && data.foto_url !== ""
-              ? data.foto_url + "?t=" + Date.now()
-              : "https://via.placeholder.com/150"
-          }
-          style={foto}
-        />
+          <div style={headerInfo}>
+            <p style={eyebrow}>Ficha médica de emergência</p>
+            <h1 style={pessoaNome}>{data.name}</h1>
 
-        <h2 style={nome}>Olá, meu nome é</h2>
-        <h1 style={pessoaNome}>{data.name}</h1>
+            <div style={badges}>
+              {idade !== null && <span style={badge}>🎂 {idade} anos</span>}
 
-        {data.data_nascimento && (
-          <p style={idadeStyle}>
-            🎂 {calcularIdade(data.data_nascimento)} anos
-          </p>
-        )}
+              {data.tipo_sanguineo && (
+                <span style={badgeRed}>🩸 {data.tipo_sanguineo}</span>
+              )}
+            </div>
+          </div>
+        </div>
 
-        <p style={frase}>🚨 Em caso de emergência</p>
-      </div>
+        <p style={emergencyText}>
+          🚨 Em caso de emergência, use as informações abaixo para ajudar no
+          contato com o responsável.
+        </p>
+      </section>
 
-      {/* SAMU */}
       <a href="tel:192" style={btnSamu}>
         👉 Ligar SAMU (192)
       </a>
 
-      {/* TIPO SANGUINEO */}
-      {data.tipo_sanguineo && (
-        <div style={tipoBox}>
-          🩸 Tipo sanguíneo: <strong>{data.tipo_sanguineo}</strong>
-        </div>
-      )}
-
-      {/* CONTATO PRINCIPAL */}
       {telefoneValido(telefonePrincipal) && (
-        <div style={card}>
+        <TapCard>
           <p style={label}>CONTATO PRINCIPAL</p>
-          <h3>{data.tutor1_nome || data.tutor2_nome}</h3>
+          <h3 style={contactName}>
+            {data.tutor1_nome || data.tutor2_nome || "Responsável"}
+          </h3>
 
-          <div style={botoes}>
-            <a href={`tel:${telefonePrincipal}`} style={btnLigar}>
-              📞 Ligar
-            </a>
+          <TapActionRow>
+            <TapCallButton href={`tel:${telefonePrincipal}`}>
+              Ligar Agora
+            </TapCallButton>
 
-            <a
+            <TapWhatsButton
               href={`https://wa.me/55${telefonePrincipal}?text=${mensagemBase()}`}
-              style={btnWhats}
             >
-              💬 WhatsApp
-            </a>
-          </div>
+              WhatsApp
+            </TapWhatsButton>
+          </TapActionRow>
 
           <button
+            type="button"
             style={btnLocal}
             onClick={() => enviarLocalizacao(telefonePrincipal)}
           >
             {loadingLoc ? "Enviando..." : "📍 Enviar localização"}
           </button>
-        </div>
+        </TapCard>
       )}
 
-      {/* CONTATO 2 */}
-      {telefoneValido(telefone2) &&
-        telefone2 !== telefonePrincipal && (
-          <div style={card}>
-            <p style={label}>CONTATO 2</p>
-            <h3>{data.tutor2_nome}</h3>
+      {telefoneValido(telefone2) && telefone2 !== telefonePrincipal && (
+        <TapCard>
+          <p style={label}>CONTATO 2</p>
+          <h3 style={contactName}>{data.tutor2_nome || "Responsável"}</h3>
 
-            <div style={botoes}>
-              <a href={`tel:${telefone2}`} style={btnLigar}>
-                📞 Ligar
-              </a>
+          <TapActionRow>
+            <TapCallButton href={`tel:${telefone2}`}>
+              Ligar Agora
+            </TapCallButton>
 
-              <a
-                href={`https://wa.me/55${telefone2}?text=${mensagemBase()}`}
-                style={btnWhats}
-              >
-                💬 WhatsApp
-              </a>
-            </div>
-          </div>
-        )}
+            <TapWhatsButton
+              href={`https://wa.me/55${telefone2}?text=${mensagemBase()}`}
+            >
+              WhatsApp
+            </TapWhatsButton>
+          </TapActionRow>
+        </TapCard>
+      )}
 
-      {/* SAÚDE */}
+      {data.tipo_sanguineo && (
+        <TapCard>
+          <p style={label}>TIPO SANGUÍNEO</p>
+          <p style={mainInfo}>
+            🩸 <strong>{data.tipo_sanguineo}</strong>
+          </p>
+        </TapCard>
+      )}
+
       {(data.comorbidades || data.alergias || data.medicamentos) && (
-        <div style={card}>
-          <h3>🩺 Informações de saúde</h3>
+        <TapCard>
+          <TapSectionTitle
+            icon="🩺"
+            title="Informações de saúde"
+            subtitle="Dados importantes para uma situação de emergência."
+          />
 
           {data.comorbidades && (
-            <p><strong>Comorbidades:</strong> {data.comorbidades}</p>
+            <div style={infoBlock}>
+              <p style={infoLabel}>Comorbidades</p>
+              <p style={infoText}>{data.comorbidades}</p>
+            </div>
           )}
 
           {data.alergias && (
-            <p><strong>Alergias:</strong> {data.alergias}</p>
+            <div style={infoBlock}>
+              <p style={infoLabel}>Alergias</p>
+              <p style={infoText}>{data.alergias}</p>
+            </div>
           )}
 
           {data.medicamentos && (
-            <p><strong>Medicamentos:</strong> {data.medicamentos}</p>
+            <div style={infoBlock}>
+              <p style={infoLabel}>Medicamentos de uso contínuo</p>
+              <p style={infoText}>{data.medicamentos}</p>
+            </div>
           )}
-        </div>
+        </TapCard>
       )}
-
-      <p style={rodape}>
-        Este QR ajuda em situações de emergência 🙏
-      </p>
-
-    </Container>
+    </TapLayout>
   );
 }
 
-/* 🎨 ESTILO MANTIDO */
+/* 🎨 ESTILO VISUAL DA VIEW MÉDICA */
 
-const header = { textAlign: "center", padding: 20 };
-
-const foto = {
-  width: 120,
-  height: 120,
-  borderRadius: "50%",
-  objectFit: "cover",
-  marginBottom: 10
+const loading = {
+  textAlign: "center",
+  padding: 30,
+  color: "#777",
 };
 
-const nome = { margin: 0 };
+const medicalHeader = {
+  background: "#fff",
+  margin: "16px 16px 0",
+  padding: 22,
+  borderRadius: 24,
+  boxShadow: "0 12px 28px rgba(0,0,0,.08)",
+  borderTop: "6px solid #ef1c1c",
+};
+
+const headerTop = {
+  display: "flex",
+  alignItems: "center",
+  gap: 18,
+};
+
+const photoWrap = {
+  width: 108,
+  height: 108,
+  minWidth: 108,
+  borderRadius: "50%",
+  padding: 5,
+  background: "#fbe2e2",
+  border: "1px solid #f2caca",
+};
+
+const foto = {
+  width: "100%",
+  height: "100%",
+  borderRadius: "50%",
+  objectFit: "cover",
+};
+
+const headerInfo = {
+  flex: 1,
+};
+
+const eyebrow = {
+  margin: "0 0 6px",
+  color: "#777",
+  fontSize: 13,
+  fontWeight: 800,
+  textTransform: "uppercase",
+  letterSpacing: ".4px",
+};
 
 const pessoaNome = {
   margin: 0,
-  fontSize: 24
+  fontSize: 30,
+  lineHeight: 1.05,
+  fontWeight: 950,
+  color: "#111",
+  textTransform: "uppercase",
 };
 
-const frase = { color: "#666" };
-
-const idadeStyle = { color: "#888" };
-
-const card = {
-  background: "#fff",
-  padding: 15,
-  borderRadius: 15,
-  marginBottom: 15
-};
-
-const botoes = {
+const badges = {
   display: "flex",
-  gap: 10,
-  marginTop: 10
+  flexWrap: "wrap",
+  gap: 8,
+  marginTop: 12,
 };
 
-const btnLigar = {
-  flex: 1,
-  background: "#e53935",
-  color: "#fff",
-  padding: 10,
-  textAlign: "center",
-  borderRadius: 10,
-  textDecoration: "none"
+const badge = {
+  display: "inline-flex",
+  alignItems: "center",
+  background: "#f7f7f7",
+  color: "#666",
+  padding: "7px 10px",
+  borderRadius: 999,
+  fontSize: 13,
+  fontWeight: 700,
 };
 
-const btnWhats = {
-  flex: 1,
-  background: "#2ecc71",
+const badgeRed = {
+  ...badge,
+  background: "#fff1f1",
+  color: "#d71920",
+};
+
+const emergencyText = {
+  margin: "20px 0 0",
+  color: "#555",
+  fontSize: 15,
+  lineHeight: 1.5,
+};
+
+const btnSamu = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 60,
+  margin: "16px 16px 0",
+  background: "#ef1c1c",
   color: "#fff",
-  padding: 10,
-  textAlign: "center",
-  borderRadius: 10,
-  textDecoration: "none"
+  borderRadius: 16,
+  textDecoration: "none",
+  fontWeight: 900,
+  fontSize: 17,
+  boxShadow: "0 16px 30px rgba(239,28,28,.22)",
+};
+
+const label = {
+  margin: "0 0 10px",
+  fontSize: 13,
+  color: "#777",
+  fontWeight: 900,
+  textTransform: "uppercase",
+  letterSpacing: ".5px",
+};
+
+const contactName = {
+  margin: 0,
+  fontSize: 24,
+  color: "#111",
+  fontWeight: 900,
 };
 
 const btnLocal = {
   width: "100%",
-  marginTop: 10,
-  padding: 10,
-  borderRadius: 10,
+  marginTop: 12,
+  minHeight: 54,
+  borderRadius: 14,
   border: "none",
-  background: "#e53935",
-  color: "#fff"
-};
-
-const btnSamu = {
-  display: "block",
-  textAlign: "center",
-  padding: 15,
-  background: "#e53935",
+  background: "#ef1c1c",
   color: "#fff",
-  borderRadius: 10,
-  textDecoration: "none",
-  marginBottom: 15
+  fontWeight: 900,
+  fontSize: 16,
+  cursor: "pointer",
 };
 
-const tipoBox = {
-  background: "#fff",
-  padding: 10,
-  borderRadius: 10,
-  marginBottom: 10,
-  textAlign: "center"
+const mainInfo = {
+  margin: 0,
+  fontSize: 22,
+  color: "#111",
 };
 
-const label = {
-  fontSize: 12,
-  color: "#888"
+const infoBlock = {
+  background: "#fafafa",
+  border: "1px solid #f0f0f0",
+  borderRadius: 16,
+  padding: 16,
+  marginTop: 14,
 };
 
-const rodape = {
-  textAlign: "center",
-  fontSize: 12,
-  color: "#aaa",
-  marginTop: 20
+const infoLabel = {
+  margin: "0 0 8px",
+  color: "#777",
+  fontSize: 13,
+  fontWeight: 900,
+  textTransform: "uppercase",
+  letterSpacing: ".4px",
+};
+
+const infoText = {
+  margin: 0,
+  color: "#222",
+  fontSize: 17,
+  lineHeight: 1.45,
+  fontWeight: 600,
 };

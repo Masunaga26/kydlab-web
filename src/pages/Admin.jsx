@@ -24,11 +24,17 @@ export default function Admin() {
 
     if (error) {
       console.error("Erro ao buscar tags:", error);
+      setLoading(false);
       return;
     }
 
     setTags(data || []);
     setLoading(false);
+  }
+
+  function sairAdmin() {
+    localStorage.removeItem("kyd_admin_auth");
+    window.location.href = "/admin/login";
   }
 
   // STATUS
@@ -50,7 +56,7 @@ export default function Admin() {
 
   // LIMPAR
   async function limpar(tag) {
-    if (!confirm("Deseja resetar este QR?")) return;
+    if (!confirm(`Deseja resetar o QR ${tag.code}?`)) return;
 
     const { error } = await supabase
       .from("tags")
@@ -71,7 +77,7 @@ export default function Admin() {
         comorbidades: null,
         alergias: null,
         medicamentos: null,
-        observacoes: null
+        observacoes: null,
       })
       .eq("code", tag.code);
 
@@ -90,7 +96,7 @@ export default function Admin() {
       const url = `${BASE_URL}/qr/${tag.code}`;
 
       const qrDataUrl = await QRCode.toDataURL(url, {
-        width: 1000
+        width: 1000,
       });
 
       const link = document.createElement("a");
@@ -143,12 +149,9 @@ export default function Admin() {
 
     await generateA3PDF(tagsDisponiveis);
 
-    const ids = tagsDisponiveis.map(t => t.id);
+    const ids = tagsDisponiveis.map((t) => t.id);
 
-    await supabase
-      .from("tags")
-      .update({ printed: true })
-      .in("id", ids);
+    await supabase.from("tags").update({ printed: true }).in("id", ids);
 
     alert("PDF A3 gerado com sucesso!");
 
@@ -157,79 +160,467 @@ export default function Admin() {
 
   // FILTRO
   const filtered = tags.filter((t) =>
-    t.code.toLowerCase().includes(search.toLowerCase())
+    String(t.code || "").toLowerCase().includes(search.toLowerCase())
   );
+
+  const total = tags.length;
+  const cadastrados = tags.filter((t) => t.locked).length;
+  const disponiveis = tags.filter((t) => !t.locked && !t.name).length;
+  const impressos = tags.filter((t) => t.printed).length;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>🛠️ Admin KYDLAB</h1>
+    <div style={page}>
+      <div style={shell}>
+        <header style={header}>
+          <div>
+            <p style={eyebrow}>Painel administrativo</p>
+            <h1 style={title}>Admin KYD LAB</h1>
+            <p style={subtitle}>
+              Controle dos códigos QR/NFC, exportações e geração de folhas A3.
+            </p>
+          </div>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-        <button onClick={exportXLS}>📥 XLS</button>
-        <button onClick={gerarA3}>📄 Gerar A3 (125 QR)</button>
+          <button type="button" onClick={sairAdmin} style={logoutButton}>
+            Sair
+          </button>
+        </header>
+
+        <section style={statsGrid}>
+          <div style={statCard}>
+            <span style={statLabel}>Total</span>
+            <strong style={statNumber}>{total}</strong>
+          </div>
+
+          <div style={statCard}>
+            <span style={statLabel}>Cadastrados</span>
+            <strong style={statNumber}>{cadastrados}</strong>
+          </div>
+
+          <div style={statCard}>
+            <span style={statLabel}>Disponíveis</span>
+            <strong style={statNumber}>{disponiveis}</strong>
+          </div>
+
+          <div style={statCard}>
+            <span style={statLabel}>Impressos</span>
+            <strong style={statNumber}>{impressos}</strong>
+          </div>
+        </section>
+
+        <section style={toolbar}>
+          <button type="button" onClick={exportXLS} style={buttonDark}>
+            📥 Exportar XLS
+          </button>
+
+          <button type="button" onClick={gerarA3} style={buttonRed}>
+            📄 Gerar A3
+          </button>
+        </section>
+
+        <section style={searchCard}>
+          <label style={searchLabel}>Buscar código</label>
+          <input
+            placeholder="Digite o código..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={searchInput}
+          />
+        </section>
+
+        {loading && (
+          <section style={emptyCard}>
+            <div style={loader}></div>
+            <p style={emptyText}>Carregando códigos...</p>
+          </section>
+        )}
+
+        {!loading && (
+          <section style={tableCard}>
+            <div style={tableHeader}>
+              <h2 style={tableTitle}>Códigos</h2>
+              <span style={tableCount}>{filtered.length} resultado(s)</span>
+            </div>
+
+            {filtered.length === 0 ? (
+              <div style={emptyState}>
+                <p style={emptyText}>Nenhum código encontrado.</p>
+              </div>
+            ) : (
+              <div style={tableScroll}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>Código</th>
+                      <th style={th}>Status</th>
+                      <th style={th}>Tipo</th>
+                      <th style={th}>Nome</th>
+                      <th style={th}>Telefone</th>
+                      <th style={th}>Ações</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filtered.map((tag) => (
+                      <tr key={tag.code}>
+                        <td style={tdCode}>{tag.code}</td>
+
+                        <td style={td}>
+                          <span style={statusBadge(getStatus(tag))}>
+                            {getStatus(tag)}
+                          </span>
+                        </td>
+
+                        <td style={td}>{tag.tipo || "-"}</td>
+                        <td style={td}>{tag.name || "-"}</td>
+                        <td style={td}>{getTelefone(tag)}</td>
+
+                        <td style={td}>
+                          <div style={actions}>
+                            <button
+                              type="button"
+                              style={actionButtonDark}
+                              onClick={() => baixarQR(tag)}
+                              title="Baixar QR"
+                            >
+                              ⬇️ QR
+                            </button>
+
+                            <button
+                              type="button"
+                              style={actionButtonBlue}
+                              onClick={() => editar(tag)}
+                              title="Editar"
+                            >
+                              ✏️
+                            </button>
+
+                            <button
+                              type="button"
+                              style={actionButtonRed}
+                              onClick={() => limpar(tag)}
+                              title="Limpar"
+                            >
+                              🧹
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
       </div>
-
-      <input
-        placeholder="Buscar código..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-
-      <br /><br />
-
-      {loading && <p>Carregando...</p>}
-
-      {!loading && (
-        <table border="1" cellPadding="10" style={{ width: "100%" }}>
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Status</th>
-              <th>Nome</th>
-              <th>Telefone</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filtered.map((tag) => (
-              <tr key={tag.code}>
-                <td>{tag.code}</td>
-                <td>{getStatus(tag)}</td>
-                <td>{tag.name || "-"}</td>
-                <td>{getTelefone(tag)}</td>
-
-                <td>
-                  <div style={{ display: "flex", gap: 5 }}>
-                    
-                    <button
-                      style={{ background: "#555", color: "#fff" }}
-                      onClick={() => baixarQR(tag)}
-                    >
-                      ⬇️ QR
-                    </button>
-
-                    <button
-                      style={{ background: "#3498db", color: "#fff" }}
-                      onClick={() => editar(tag)}
-                    >
-                      ✏️
-                    </button>
-
-                    <button
-                      style={{ background: "#e74c3c", color: "#fff" }}
-                      onClick={() => limpar(tag)}
-                    >
-                      🧹
-                    </button>
-
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
     </div>
   );
-}	
+}
+
+/* 🎨 ESTILO ADMIN */
+
+const page = {
+  minHeight: "100vh",
+  background: "#f5f5f5",
+  color: "#111",
+  fontFamily: "Inter, Arial, sans-serif",
+};
+
+const shell = {
+  width: "100%",
+  maxWidth: 1180,
+  margin: "0 auto",
+  padding: "24px 16px 40px",
+};
+
+const header = {
+  background: "#ef1c1c",
+  color: "#fff",
+  padding: 28,
+  borderRadius: 24,
+  marginBottom: 18,
+  boxShadow: "0 16px 36px rgba(239,28,28,.22)",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 16,
+};
+
+const logoutButton = {
+  width: "auto",
+  minHeight: 40,
+  padding: "0 16px",
+  borderRadius: 12,
+  border: "none",
+  background: "rgba(255,255,255,.18)",
+  color: "#fff",
+  fontWeight: 900,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+const eyebrow = {
+  margin: "0 0 6px",
+  fontSize: 13,
+  fontWeight: 900,
+  opacity: 0.8,
+  textTransform: "uppercase",
+  letterSpacing: ".5px",
+};
+
+const title = {
+  margin: 0,
+  fontSize: 34,
+  lineHeight: 1.1,
+  fontWeight: 950,
+};
+
+const subtitle = {
+  margin: "10px 0 0",
+  fontSize: 15,
+  lineHeight: 1.45,
+  opacity: 0.9,
+};
+
+const statsGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+  gap: 12,
+  marginBottom: 18,
+};
+
+const statCard = {
+  background: "#fff",
+  borderRadius: 18,
+  padding: 18,
+  border: "1px solid #eee",
+  boxShadow: "0 10px 24px rgba(0,0,0,.06)",
+};
+
+const statLabel = {
+  display: "block",
+  color: "#777",
+  fontSize: 13,
+  fontWeight: 800,
+  marginBottom: 8,
+};
+
+const statNumber = {
+  display: "block",
+  color: "#111",
+  fontSize: 28,
+  lineHeight: 1,
+  fontWeight: 950,
+};
+
+const toolbar = {
+  display: "flex",
+  gap: 10,
+  marginBottom: 14,
+};
+
+const buttonDark = {
+  width: "auto",
+  minHeight: 48,
+  padding: "0 18px",
+  borderRadius: 14,
+  border: "none",
+  background: "#222",
+  color: "#fff",
+  fontWeight: 900,
+  cursor: "pointer",
+};
+
+const buttonRed = {
+  ...buttonDark,
+  background: "#ef1c1c",
+};
+
+const searchCard = {
+  background: "#fff",
+  borderRadius: 18,
+  padding: 18,
+  marginBottom: 14,
+  border: "1px solid #eee",
+  boxShadow: "0 10px 24px rgba(0,0,0,.06)",
+};
+
+const searchLabel = {
+  display: "block",
+  fontSize: 13,
+  fontWeight: 900,
+  color: "#777",
+  textTransform: "uppercase",
+  letterSpacing: ".4px",
+  marginBottom: 8,
+};
+
+const searchInput = {
+  width: "100%",
+  minHeight: 52,
+  padding: "12px 14px",
+  borderRadius: 14,
+  border: "1px solid #ddd",
+  fontSize: 16,
+  outline: "none",
+};
+
+const tableCard = {
+  background: "#fff",
+  borderRadius: 22,
+  padding: 18,
+  border: "1px solid #eee",
+  boxShadow: "0 12px 28px rgba(0,0,0,.08)",
+};
+
+const tableHeader = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  marginBottom: 14,
+};
+
+const tableTitle = {
+  margin: 0,
+  fontSize: 22,
+  fontWeight: 950,
+};
+
+const tableCount = {
+  color: "#777",
+  fontSize: 13,
+  fontWeight: 800,
+};
+
+const tableScroll = {
+  width: "100%",
+  overflowX: "auto",
+};
+
+const table = {
+  width: "100%",
+  borderCollapse: "collapse",
+  minWidth: 780,
+};
+
+const th = {
+  textAlign: "left",
+  padding: "12px 10px",
+  borderBottom: "1px solid #eee",
+  color: "#777",
+  fontSize: 12,
+  textTransform: "uppercase",
+  letterSpacing: ".4px",
+};
+
+const td = {
+  padding: "13px 10px",
+  borderBottom: "1px solid #f0f0f0",
+  color: "#333",
+  fontSize: 14,
+  verticalAlign: "middle",
+};
+
+const tdCode = {
+  ...td,
+  fontWeight: 900,
+  color: "#111",
+};
+
+const actions = {
+  display: "flex",
+  gap: 6,
+};
+
+const actionButtonBase = {
+  width: "auto",
+  minHeight: 36,
+  padding: "0 10px",
+  borderRadius: 10,
+  border: "none",
+  color: "#fff",
+  fontWeight: 900,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+const actionButtonDark = {
+  ...actionButtonBase,
+  background: "#555",
+};
+
+const actionButtonBlue = {
+  ...actionButtonBase,
+  background: "#3498db",
+};
+
+const actionButtonRed = {
+  ...actionButtonBase,
+  background: "#e74c3c",
+};
+
+const emptyCard = {
+  background: "#fff",
+  borderRadius: 22,
+  padding: 28,
+  textAlign: "center",
+  border: "1px solid #eee",
+};
+
+const emptyState = {
+  padding: 28,
+  textAlign: "center",
+};
+
+const emptyText = {
+  margin: 0,
+  color: "#777",
+  fontSize: 15,
+};
+
+const loader = {
+  width: 42,
+  height: 42,
+  border: "5px solid #f1f1f1",
+  borderTop: "5px solid #ef1c1c",
+  borderRadius: "50%",
+  margin: "0 auto 16px",
+  animation: "spin 1s linear infinite",
+};
+
+function statusBadge(status) {
+  const base = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 28,
+    padding: "0 10px",
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+  };
+
+  if (status === "Cadastrado") {
+    return {
+      ...base,
+      background: "#eaf8ef",
+      color: "#168a45",
+    };
+  }
+
+  if (status === "Vinculado") {
+    return {
+      ...base,
+      background: "#fff4d8",
+      color: "#9a6a00",
+    };
+  }
+
+  return {
+    ...base,
+    background: "#f1f1f1",
+    color: "#666",
+  };
+}

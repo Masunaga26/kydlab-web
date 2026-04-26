@@ -12,12 +12,16 @@ import PetView from "./pages/PetView";
 import PessoaView from "./pages/PessoaView";
 
 import Admin from "./pages/Admin";
+import AdminEdit from "./pages/AdminEdit";
+import AdminLogin from "./pages/AdminLogin";
+
+// 🔒 Proteção Admin
+import AdminRoute from "./components/AdminRoute";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* 🔥 REDIRECT RAIZ */}
         <Route path="/" element={<Navigate to="/escolha/TESTE123" />} />
 
@@ -32,13 +36,31 @@ export default function App() {
         <Route path="/cadastro/pet/:code" element={<CadastroPet />} />
         <Route path="/cadastro/pessoa/:code" element={<CadastroPessoa />} />
 
-        {/* 👁️ VISUALIZAÇÃO (PADRÃO FINAL) */}
+        {/* 👁️ VISUALIZAÇÃO */}
         <Route path="/pet/:code" element={<PetView />} />
         <Route path="/pessoa/:code" element={<PessoaView />} />
 
-        {/* 🛠️ ADMIN */}
-        <Route path="/admin" element={<Admin />} />
+        {/* 🔐 LOGIN ADMIN */}
+        <Route path="/admin/login" element={<AdminLogin />} />
 
+        {/* 🛠️ ADMIN PROTEGIDO */}
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/edit/:code"
+          element={
+            <AdminRoute>
+              <AdminEdit />
+            </AdminRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
