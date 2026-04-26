@@ -3,15 +3,11 @@ import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Container from "../components/Container";
 
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-
 export default function CadastroPessoa() {
   const { code } = useParams();
 
   const [nome, setNome] = useState("");
   const [dataNascTexto, setDataNascTexto] = useState("");
-  const [dataNascObj, setDataNascObj] = useState(null);
   const [tipoSanguineo, setTipoSanguineo] = useState("");
   const [telefone1, setTelefone1] = useState("");
   const [telefone2, setTelefone2] = useState("");
@@ -110,11 +106,14 @@ export default function CadastroPessoa() {
       let foto_url = null;
 
       if (foto) {
-        const fileName = `${code}-${Date.now()}`;
+        const fileName = `${code}-${Date.now()}.jpg`;
 
         const { error: uploadError } = await supabase.storage
           .from("fotos")
-          .upload(fileName, foto);
+          .upload(fileName, foto, {
+            contentType: "image/jpeg",
+            upsert: true,
+          });
 
         if (!uploadError) {
           const { data: publicUrlData } = supabase.storage
@@ -125,12 +124,9 @@ export default function CadastroPessoa() {
         }
       }
 
-      // 🔥 CORREÇÃO AQUI (NÃO SOBRESCREVE COM NULL)
       const updateData = {
         name: nome,
-        data_nascimento: dataNascObj
-          ? dataNascObj.toISOString().split("T")[0]
-          : formatarDataISO(dataNascTexto),
+        data_nascimento: formatarDataISO(dataNascTexto),
         tipo_sanguineo: tipoSanguineo,
 
         tutor1_nome: tutor1Nome,
@@ -212,18 +208,6 @@ export default function CadastroPessoa() {
           setDataNascTexto(v);
         }}
         style={input}
-      />
-
-      <DatePicker
-        selected={dataNascObj}
-        onChange={(date) => setDataNascObj(date)}
-        dateFormat="dd/MM/yyyy"
-        showYearDropdown
-        scrollableYearDropdown
-        yearDropdownItemNumber={100}
-        maxDate={new Date()}
-        className="input"
-        placeholderText="Selecionar no calendário"
       />
 
       {/* TIPO SANGUÍNEO */}
