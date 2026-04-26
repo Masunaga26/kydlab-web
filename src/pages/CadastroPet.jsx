@@ -23,7 +23,7 @@ export default function CadastroPet() {
     return limpo.length === 10 || limpo.length === 11;
   }
 
-  // 🔥 COMPRESSÃO (NOVO)
+  // 🔥 COMPRESSÃO CORRIGIDA (COM FALLBACK)
   function comprimirImagem(file) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -33,35 +33,49 @@ export default function CadastroPet() {
         img.src = e.target.result;
       };
 
+      img.onerror = () => {
+        resolve(file);
+      };
+
       img.onload = () => {
-        const canvas = document.createElement("canvas");
+        try {
+          const canvas = document.createElement("canvas");
 
-        const maxWidth = 1200;
-        const scale = maxWidth / img.width;
+          const maxWidth = 1200;
+          const scale = Math.min(1, maxWidth / img.width);
 
-        canvas.width = maxWidth;
-        canvas.height = img.height * scale;
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
 
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        canvas.toBlob(
-          (blob) => {
-            const compressedFile = new File([blob], file.name, {
-              type: "image/jpeg",
-            });
-            resolve(compressedFile);
-          },
-          "image/jpeg",
-          0.7
-        );
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                resolve(file); // fallback mobile
+                return;
+              }
+
+              const compressedFile = new File([blob], file.name, {
+                type: "image/jpeg",
+              });
+
+              resolve(compressedFile);
+            },
+            "image/jpeg",
+            0.7
+          );
+        } catch (err) {
+          console.error("Erro compressão:", err);
+          resolve(file);
+        }
       };
 
       reader.readAsDataURL(file);
     });
   }
 
-  // 📸 FOTO (AGORA COM COMPRESSÃO)
   async function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -96,11 +110,14 @@ export default function CadastroPet() {
       let foto_url = null;
 
       if (foto) {
-        const fileName = `${code}-${Date.now()}`;
+        const fileName = `${code}-${Date.now()}.jpg`;
 
         const { error: uploadError } = await supabase.storage
           .from("fotos")
-          .upload(fileName, foto);
+          .upload(fileName, foto, {
+            contentType: "image/jpeg",
+            upsert: true,
+          });
 
         if (!uploadError) {
           const { data: publicUrlData } = supabase.storage
@@ -108,29 +125,37 @@ export default function CadastroPet() {
             .getPublicUrl(fileName);
 
           foto_url = publicUrlData.publicUrl;
+        } else {
+          console.error("Erro upload:", uploadError);
         }
+      }
+
+      const updateData = {
+        name: nome,
+
+        tutor1_nome: tutor1Nome,
+        tutor1_telefone: telefone1,
+
+        tutor2_nome: tutor2Nome,
+        tutor2_telefone: telefone2,
+
+        observacoes,
+
+        tipo: "pet",
+        locked: true,
+      };
+
+      if (foto_url) {
+        updateData.foto_url = foto_url;
       }
 
       const { error } = await supabase
         .from("tags")
-        .update({
-          name: nome,
-
-          tutor1_nome: tutor1Nome,
-          tutor1_telefone: telefone1,
-
-          tutor2_nome: tutor2Nome,
-          tutor2_telefone: telefone2,
-
-          observacoes,
-          foto_url,
-
-          tipo: "pet",
-          locked: true,
-        })
+        .update(updateData)
         .eq("code", code);
 
       if (error) {
+        console.error(error);
         alert("Erro ao salvar");
         return;
       }
@@ -231,8 +256,7 @@ export default function CadastroPet() {
   );
 }
 
-/* 🔥 ESTILOS (inalterados) */
-
+/* estilos mantidos */
 const fotoCircle = {
   width: 120,
   height: 120,

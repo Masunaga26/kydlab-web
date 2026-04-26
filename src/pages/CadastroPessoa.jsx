@@ -28,7 +28,7 @@ export default function CadastroPessoa() {
     return limpo.length === 10 || limpo.length === 11;
   }
 
-  // 🔥 COMPRESSÃO
+  // 🔥 COMPRESSÃO CORRIGIDA (COM FALLBACK)
   function comprimirImagem(file) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -38,28 +38,45 @@ export default function CadastroPessoa() {
         img.src = e.target.result;
       };
 
+      img.onerror = () => {
+        // fallback total
+        resolve(file);
+      };
+
       img.onload = () => {
-        const canvas = document.createElement("canvas");
+        try {
+          const canvas = document.createElement("canvas");
 
-        const maxWidth = 1200;
-        const scale = maxWidth / img.width;
+          const maxWidth = 1200;
+          const scale = Math.min(1, maxWidth / img.width);
 
-        canvas.width = maxWidth;
-        canvas.height = img.height * scale;
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
 
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        canvas.toBlob(
-          (blob) => {
-            const compressedFile = new File([blob], file.name, {
-              type: "image/jpeg",
-            });
-            resolve(compressedFile);
-          },
-          "image/jpeg",
-          0.7
-        );
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                // 🔥 fallback crítico (mobile)
+                resolve(file);
+                return;
+              }
+
+              const compressedFile = new File([blob], file.name, {
+                type: "image/jpeg",
+              });
+
+              resolve(compressedFile);
+            },
+            "image/jpeg",
+            0.7
+          );
+        } catch (err) {
+          console.error("Erro compressão:", err);
+          resolve(file);
+        }
       };
 
       reader.readAsDataURL(file);
@@ -121,6 +138,8 @@ export default function CadastroPessoa() {
             .getPublicUrl(fileName);
 
           foto_url = publicUrlData.publicUrl;
+        } else {
+          console.error("Erro upload:", uploadError);
         }
       }
 
@@ -153,6 +172,7 @@ export default function CadastroPessoa() {
         .eq("code", code);
 
       if (error) {
+        console.error(error);
         alert("Erro ao salvar");
         return;
       }
@@ -195,7 +215,6 @@ export default function CadastroPessoa() {
 
       {/* DATA */}
       <label style={label}>Data de nascimento</label>
-
       <input
         placeholder="__/__/____"
         value={dataNascTexto}
@@ -210,13 +229,9 @@ export default function CadastroPessoa() {
         style={input}
       />
 
-      {/* TIPO SANGUÍNEO */}
+      {/* RESTO IGUAL */}
       <label style={label}>Tipo sanguíneo</label>
-      <select
-        value={tipoSanguineo}
-        onChange={(e) => setTipoSanguineo(e.target.value)}
-        style={input}
-      >
+      <select value={tipoSanguineo} onChange={(e) => setTipoSanguineo(e.target.value)} style={input}>
         <option value="">Selecione</option>
         <option>O+</option>
         <option>O-</option>
@@ -228,7 +243,6 @@ export default function CadastroPessoa() {
         <option>AB-</option>
       </select>
 
-      {/* CONTATO 1 */}
       <label style={label}>Contato principal *</label>
       <input
         placeholder="(99)99999-9999"
@@ -246,7 +260,6 @@ export default function CadastroPessoa() {
         style={input}
       />
 
-      {/* CONTATO 2 */}
       <label style={label}>Contato secundário</label>
       <input
         placeholder="(99)99999-9999"
@@ -264,7 +277,6 @@ export default function CadastroPessoa() {
         style={input}
       />
 
-      {/* SAÚDE */}
       <label style={label}>Comorbidades</label>
       <input value={comorbidades} onChange={(e) => setComorbidades(e.target.value)} style={input} />
 
@@ -274,7 +286,6 @@ export default function CadastroPessoa() {
       <label style={label}>Medicamentos</label>
       <input value={medicamentos} onChange={(e) => setMedicamentos(e.target.value)} style={input} />
 
-      {/* BOTÃO */}
       <button onClick={salvar} disabled={salvando} style={btnSalvar}>
         {salvando ? "Salvando..." : "Salvar"}
       </button>
@@ -285,59 +296,11 @@ export default function CadastroPessoa() {
   );
 }
 
-/* 🎨 ESTILOS */
-
-const fotoCircle = {
-  width: 120,
-  height: 120,
-  borderRadius: "50%",
-  background: "#ffeaea",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  margin: "20px auto",
-  cursor: "pointer",
-};
-
-const imgCircle = {
-  width: "100%",
-  height: "100%",
-  borderRadius: "50%",
-  objectFit: "cover",
-};
-
-const fotoTexto = {
-  color: "#ff3b3b",
-  fontWeight: 600,
-};
-
-const input = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  border: "1px solid #ddd",
-  marginTop: 5,
-  marginBottom: 10,
-};
-
-const label = {
-  marginTop: 10,
-  display: "block",
-};
-
-const btnSalvar = {
-  width: "100%",
-  padding: 15,
-  borderRadius: 12,
-  background: "#ff3b3b",
-  color: "#fff",
-  border: "none",
-  marginTop: 20,
-};
-
-const obs = {
-  textAlign: "center",
-  fontSize: 12,
-  color: "#999",
-  marginTop: 10,
-};
+/* estilos iguais */
+const fotoCircle = { width:120,height:120,borderRadius:"50%",background:"#ffeaea",display:"flex",alignItems:"center",justifyContent:"center",margin:"20px auto",cursor:"pointer"};
+const imgCircle = { width:"100%",height:"100%",borderRadius:"50%",objectFit:"cover"};
+const fotoTexto = { color:"#ff3b3b",fontWeight:600};
+const input = { width:"100%",padding:12,borderRadius:10,border:"1px solid #ddd",marginTop:5,marginBottom:10};
+const label = { marginTop:10,display:"block"};
+const btnSalvar = { width:"100%",padding:15,borderRadius:12,background:"#ff3b3b",color:"#fff",border:"none",marginTop:20};
+const obs = { textAlign:"center",fontSize:12,color:"#999",marginTop:10};
