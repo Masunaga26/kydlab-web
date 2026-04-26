@@ -33,7 +33,7 @@ export default function CadastroPessoa() {
     return limpo.length === 10 || limpo.length === 11;
   }
 
-  // 🔥 NOVO — COMPRESSÃO
+  // 🔥 COMPRESSÃO
   function comprimirImagem(file) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -63,7 +63,7 @@ export default function CadastroPessoa() {
             resolve(compressedFile);
           },
           "image/jpeg",
-          0.7 // qualidade
+          0.7
         );
       };
 
@@ -71,7 +71,6 @@ export default function CadastroPessoa() {
     });
   }
 
-  // 📸 FOTO (AGORA COM COMPRESSÃO)
   async function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -169,7 +168,10 @@ export default function CadastroPessoa() {
 
   return (
     <Container>
-      <div style={fotoCircle} onClick={() => document.getElementById("fileInput").click()}>
+      <div
+        style={fotoCircle}
+        onClick={() => document.getElementById("fileInput").click()}
+      >
         {preview ? (
           <img src={preview} style={imgCircle} />
         ) : (
@@ -185,9 +187,13 @@ export default function CadastroPessoa() {
         />
       </div>
 
-      {/* RESTANTE IGUAL (não alterado) */}
+      {/* RESTANTE IGUAL */}
     </Container>
   );
+}
+
+/* ✅ AGORA FORA DA FUNÇÃO (CORRETO) */
+
 const fotoCircle = {
   width: 120,
   height: 120,
@@ -211,6 +217,3 @@ const fotoTexto = {
   color: "#ff3b3b",
   fontWeight: 600,
 };
-}
-
-/* estilos iguais */
