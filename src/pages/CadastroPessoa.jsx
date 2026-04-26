@@ -187,6 +187,29 @@ export default function CadastroPessoa() {
       {/* RESTANTE IGUAL (não alterado) */}
     </Container>
   );
+const fotoCircle = {
+  width: 120,
+  height: 120,
+  borderRadius: "50%",
+  background: "#ffeaea",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  margin: "20px auto",
+  cursor: "pointer",
+};
+
+const imgCircle = {
+  width: "100%",
+  height: "100%",
+  borderRadius: "50%",
+  objectFit: "cover",
+};
+
+const fotoTexto = {
+  color: "#ff3b3b",
+  fontWeight: 600,
+};
 }
 
 /* estilos iguais */
