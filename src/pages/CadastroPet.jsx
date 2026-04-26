@@ -28,7 +28,6 @@ export default function CadastroPessoa() {
     return limpo.length === 10 || limpo.length === 11;
   }
 
-  // 🔥 COMPRESSÃO
   function comprimirImagem(file) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -109,7 +108,7 @@ export default function CadastroPessoa() {
         const fileName = `${code}-${Date.now()}.jpg`;
 
         const { data, error: uploadError } = await supabase.storage
-          .from("fotos")
+          .from("profile-photos") // ✅ CORRIGIDO
           .upload(fileName, foto, {
             contentType: "image/jpeg",
             upsert: true,
@@ -122,7 +121,7 @@ export default function CadastroPessoa() {
         }
 
         const { data: publicUrlData } = supabase.storage
-          .from("fotos")
+          .from("profile-photos") // ✅ CORRIGIDO
           .getPublicUrl(fileName);
 
         foto_url = publicUrlData.publicUrl;
@@ -173,7 +172,6 @@ export default function CadastroPessoa() {
   return (
     <Container>
 
-      {/* FOTO */}
       <div
         style={fotoCircle}
         onClick={() => document.getElementById("fileInput").click()}
@@ -193,11 +191,9 @@ export default function CadastroPessoa() {
         />
       </div>
 
-      {/* NOME */}
       <label style={label}>Nome *</label>
       <input value={nome} onChange={(e) => setNome(e.target.value)} style={input} />
 
-      {/* DATA */}
       <label style={label}>Data de nascimento</label>
 
       <input
@@ -214,7 +210,6 @@ export default function CadastroPessoa() {
         style={input}
       />
 
-      {/* TIPO SANGUÍNEO */}
       <label style={label}>Tipo sanguíneo</label>
       <select
         value={tipoSanguineo}
@@ -232,7 +227,6 @@ export default function CadastroPessoa() {
         <option>AB-</option>
       </select>
 
-      {/* CONTATO 1 */}
       <label style={label}>Contato principal *</label>
       <input
         placeholder="(99)99999-9999"
@@ -250,7 +244,6 @@ export default function CadastroPessoa() {
         style={input}
       />
 
-      {/* CONTATO 2 */}
       <label style={label}>Contato secundário</label>
       <input
         placeholder="(99)99999-9999"
@@ -268,7 +261,6 @@ export default function CadastroPessoa() {
         style={input}
       />
 
-      {/* SAÚDE */}
       <label style={label}>Comorbidades</label>
       <input value={comorbidades} onChange={(e) => setComorbidades(e.target.value)} style={input} />
 
@@ -278,7 +270,6 @@ export default function CadastroPessoa() {
       <label style={label}>Medicamentos</label>
       <input value={medicamentos} onChange={(e) => setMedicamentos(e.target.value)} style={input} />
 
-      {/* BOTÃO */}
       <button onClick={salvar} disabled={salvando} style={btnSalvar}>
         {salvando ? "Salvando..." : "Salvar"}
       </button>
