@@ -23,12 +23,53 @@ export default function CadastroPet() {
     return limpo.length === 10 || limpo.length === 11;
   }
 
-  function handleFoto(e) {
+  // 🔥 COMPRESSÃO (NOVO)
+  function comprimirImagem(file) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        img.src = e.target.result;
+      };
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+
+        const maxWidth = 1200;
+        const scale = maxWidth / img.width;
+
+        canvas.width = maxWidth;
+        canvas.height = img.height * scale;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(
+          (blob) => {
+            const compressedFile = new File([blob], file.name, {
+              type: "image/jpeg",
+            });
+            resolve(compressedFile);
+          },
+          "image/jpeg",
+          0.7
+        );
+      };
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // 📸 FOTO (AGORA COM COMPRESSÃO)
+  async function handleFoto(e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    setFoto(file);
-    setPreview(URL.createObjectURL(file));
+    const compressed = await comprimirImagem(file);
+
+    setFoto(compressed);
+    setPreview(URL.createObjectURL(compressed));
   }
 
   async function salvar() {
@@ -190,7 +231,7 @@ export default function CadastroPet() {
   );
 }
 
-/* 🔥 ESTILOS (mantidos) */
+/* 🔥 ESTILOS (inalterados) */
 
 const fotoCircle = {
   width: 120,

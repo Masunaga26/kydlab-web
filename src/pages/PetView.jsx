@@ -51,7 +51,7 @@ export default function PetView() {
 
   function mensagemBase() {
     return encodeURIComponent(
-      `Encontrei ${data.name || "esse pet"} em uma emergência.`
+      `Encontrei ${data?.name || "esse pet"} em uma emergência.`
     );
   }
 
@@ -70,7 +70,7 @@ export default function PetView() {
         const { latitude, longitude } = pos.coords;
 
         const mensagem = encodeURIComponent(
-          `Encontrei ${data.name || "esse pet"} em uma emergência.\nLocalização:\nhttps://maps.google.com/?q=${latitude},${longitude}`
+          `Encontrei ${data?.name || "esse pet"} em uma emergência.\nLocalização:\nhttps://maps.google.com/?q=${latitude},${longitude}`
         );
 
         window.location.href = `https://wa.me/55${telefone}?text=${mensagem}`;
@@ -84,17 +84,19 @@ export default function PetView() {
 
   if (!data) return <p style={{ textAlign: "center" }}>Carregando...</p>;
 
+  // 🔥 CORREÇÃO FINAL DA FOTO (segura + anti-cache)
+  const fotoUrlFinal =
+    data?.foto_url && data.foto_url !== ""
+      ? `${data.foto_url}?t=${Date.now()}`
+      : "https://via.placeholder.com/150";
+
   return (
     <Container>
 
       {/* HEADER */}
       <div style={header}>
         <img
-          src={
-            data?.foto_url && data.foto_url !== ""
-              ? data.foto_url + "?t=" + Date.now()
-              : "https://via.placeholder.com/150"
-          }
+          src={fotoUrlFinal}
           style={foto}
         />
 
