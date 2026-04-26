@@ -3,20 +3,15 @@ import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Container from "../components/Container";
 
-export default function CadastroPessoa() {
+export default function CadastroPet() {
   const { code } = useParams();
 
   const [nome, setNome] = useState("");
-  const [dataNascTexto, setDataNascTexto] = useState("");
-  const [tipoSanguineo, setTipoSanguineo] = useState("");
   const [telefone1, setTelefone1] = useState("");
   const [telefone2, setTelefone2] = useState("");
   const [tutor1Nome, setTutor1Nome] = useState("");
   const [tutor2Nome, setTutor2Nome] = useState("");
-
-  const [comorbidades, setComorbidades] = useState("");
-  const [alergias, setAlergias] = useState("");
-  const [medicamentos, setMedicamentos] = useState("");
+  const [observacoes, setObservacoes] = useState("");
 
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -28,6 +23,7 @@ export default function CadastroPessoa() {
     return limpo.length === 10 || limpo.length === 11;
   }
 
+  // 🔥 COMPRESSÃO (mantida)
   function comprimirImagem(file) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -75,17 +71,11 @@ export default function CadastroPessoa() {
     setPreview(URL.createObjectURL(compressed));
   }
 
-  function formatarDataISO(data) {
-    if (!data || data.length !== 10) return null;
-    const [dia, mes, ano] = data.split("/");
-    return `${ano}-${mes}-${dia}`;
-  }
-
   async function salvar() {
     if (salvando) return;
 
     if (!nome) {
-      alert("Preencha o nome");
+      alert("Preencha o nome do pet");
       return;
     }
 
@@ -107,7 +97,7 @@ export default function CadastroPessoa() {
       if (foto) {
         const fileName = `${code}-${Date.now()}.jpg`;
 
-        const { data, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("profile-photos") // ✅ CORRIGIDO
           .upload(fileName, foto, {
             contentType: "image/jpeg",
@@ -116,7 +106,7 @@ export default function CadastroPessoa() {
 
         if (uploadError) {
           console.error("ERRO UPLOAD:", uploadError);
-          alert("Erro ao enviar foto");
+          alert("Erro no upload");
           return;
         }
 
@@ -129,8 +119,6 @@ export default function CadastroPessoa() {
 
       const updateData = {
         name: nome,
-        data_nascimento: formatarDataISO(dataNascTexto),
-        tipo_sanguineo: tipoSanguineo,
 
         tutor1_nome: tutor1Nome,
         tutor1_telefone: telefone1,
@@ -138,11 +126,9 @@ export default function CadastroPessoa() {
         tutor2_nome: tutor2Nome,
         tutor2_telefone: telefone2,
 
-        comorbidades,
-        alergias,
-        medicamentos,
+        observacoes,
 
-        tipo: "pessoa",
+        tipo: "pet",
         locked: true,
       };
 
@@ -156,11 +142,12 @@ export default function CadastroPessoa() {
         .eq("code", code);
 
       if (error) {
+        console.error(error);
         alert("Erro ao salvar");
         return;
       }
 
-      window.location.href = `/pessoa/${code}`;
+      window.location.href = `/pet/${code}`;
     } catch (err) {
       console.error(err);
       alert("Erro inesperado");
@@ -172,18 +159,19 @@ export default function CadastroPessoa() {
   return (
     <Container>
 
+      {/* FOTO */}
       <div
         style={fotoCircle}
-        onClick={() => document.getElementById("fileInput").click()}
+        onClick={() => document.getElementById("fileInputPet").click()}
       >
         {preview ? (
           <img src={preview} style={imgCircle} />
         ) : (
-          <span style={fotoTexto}>Adicionar foto</span>
+          <span style={fotoTexto}>Enviar foto</span>
         )}
 
         <input
-          id="fileInput"
+          id="fileInputPet"
           type="file"
           accept="image/*"
           onChange={handleFoto}
@@ -191,42 +179,15 @@ export default function CadastroPessoa() {
         />
       </div>
 
-      <label style={label}>Nome *</label>
-      <input value={nome} onChange={(e) => setNome(e.target.value)} style={input} />
-
-      <label style={label}>Data de nascimento</label>
-
+      {/* NOME */}
+      <label style={label}>Nome do pet *</label>
       <input
-        placeholder="__/__/____"
-        value={dataNascTexto}
-        onChange={(e) => {
-          let v = e.target.value.replace(/\D/g, "");
-
-          if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
-          if (v.length > 5) v = v.slice(0, 5) + "/" + v.slice(5, 9);
-
-          setDataNascTexto(v);
-        }}
+        value={nome}
+        onChange={(e) => setNome(e.target.value)}
         style={input}
       />
 
-      <label style={label}>Tipo sanguíneo</label>
-      <select
-        value={tipoSanguineo}
-        onChange={(e) => setTipoSanguineo(e.target.value)}
-        style={input}
-      >
-        <option value="">Selecione</option>
-        <option>O+</option>
-        <option>O-</option>
-        <option>A+</option>
-        <option>A-</option>
-        <option>B+</option>
-        <option>B-</option>
-        <option>AB+</option>
-        <option>AB-</option>
-      </select>
-
+      {/* CONTATO 1 */}
       <label style={label}>Contato principal *</label>
       <input
         placeholder="(99)99999-9999"
@@ -244,6 +205,7 @@ export default function CadastroPessoa() {
         style={input}
       />
 
+      {/* CONTATO 2 */}
       <label style={label}>Contato secundário</label>
       <input
         placeholder="(99)99999-9999"
@@ -261,15 +223,15 @@ export default function CadastroPessoa() {
         style={input}
       />
 
-      <label style={label}>Comorbidades</label>
-      <input value={comorbidades} onChange={(e) => setComorbidades(e.target.value)} style={input} />
+      {/* OBSERVAÇÕES */}
+      <label style={label}>Informações importantes</label>
+      <input
+        value={observacoes}
+        onChange={(e) => setObservacoes(e.target.value)}
+        style={input}
+      />
 
-      <label style={label}>Alergias</label>
-      <input value={alergias} onChange={(e) => setAlergias(e.target.value)} style={input} />
-
-      <label style={label}>Medicamentos</label>
-      <input value={medicamentos} onChange={(e) => setMedicamentos(e.target.value)} style={input} />
-
+      {/* BOTÃO */}
       <button onClick={salvar} disabled={salvando} style={btnSalvar}>
         {salvando ? "Salvando..." : "Salvar"}
       </button>
