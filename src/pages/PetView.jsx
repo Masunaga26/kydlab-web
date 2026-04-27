@@ -56,6 +56,9 @@ export default function PetView() {
     ? telefone2
     : null;
 
+  const mostrarTutor2 =
+    telefoneValido(telefone2) && Boolean(data?.tutor2_nome || telefone2);
+
   function mensagemBase() {
     return encodeURIComponent(
       `Encontrei ${data?.name || "esse pet"} em uma emergência.`
@@ -141,12 +144,10 @@ export default function PetView() {
         </TapCard>
       )}
 
-      {telefoneValido(telefone2) && telefone2 !== telefonePrincipal && (
+      {mostrarTutor2 && (
         <TapCard>
           <p style={label}>TUTOR 2</p>
-          <h3 style={contactName}>
-            {data.tutor2_nome || "Responsável"}
-          </h3>
+          <h3 style={contactName}>{data.tutor2_nome || "Responsável"}</h3>
 
           <TapActionRow>
             <TapCallButton href={`tel:${telefone2}`}>
