@@ -6,11 +6,13 @@ import { saveAs } from "file-saver";
 import QRCode from "qrcode";
 
 const BASE_URL = "https://app.kydlab.com.br";
+const QTD_QR_A3 = 125;
 
 export default function Admin() {
   const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [gerandoA3, setGerandoA3] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -118,6 +120,8 @@ export default function Admin() {
       Nome: t.name || "-",
       Telefone: getTelefone(t),
       Status: getStatus(t),
+      Lote: t.lote || "-",
+      Impresso: t.printed ? "Sim" : "Não",
       Criado: new Date(t.created_at).toLocaleString(),
     }));
 
@@ -133,29 +137,111 @@ export default function Admin() {
     saveAs(new Blob([buffer]), "tags_kydlab.xlsx");
   }
 
-  // 🚀 GERAR A3 CORRETO (SEM GERAR NOVO LOTE)
+  function gerarCodigoUnico(codigosExistentes, codigosNovos) {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let codigo = "";
+
+    do {
+      codigo = "";
+      for (let i = 0; i < 8; i++) {
+        codigo += chars[Math.floor(Math.random() * chars.length)];
+      }
+    } while (codigosExistentes.has(codigo) || codigosNovos.has(codigo));
+
+    return codigo;
+  }
+
+  function gerarNomeLote() {
+    const agora = new Date();
+
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, "0");
+    const dia = String(agora.getDate()).padStart(2, "0");
+    const hora = String(agora.getHours()).padStart(2, "0");
+    const minuto = String(agora.getMinutes()).padStart(2, "0");
+    const segundo = String(agora.getSeconds()).padStart(2, "0");
+
+    return `IMPRESSAO_${ano}_${mes}_${dia}_${hora}${minuto}${segundo}`;
+  }
+
+  // 🚀 GERAR NOVO LOTE + PDF A3
   async function gerarA3() {
-    const { data: tagsDisponiveis, error } = await supabase
-      .from("tags")
-      .select("*")
-      .eq("printed", false)
-      .eq("locked", false)
-      .limit(125);
+    if (gerandoA3) return;
 
-    if (error || !tagsDisponiveis || tagsDisponiveis.length === 0) {
-      alert("Nenhum QR disponível");
-      return;
+    const confirmar = confirm(
+      `Gerar ${QTD_QR_A3} novos QR Codes e montar uma folha A3 para impressão?`
+    );
+
+    if (!confirmar) return;
+
+    setGerandoA3(true);
+
+    try {
+      const lote = gerarNomeLote();
+
+      const codigosExistentes = new Set(
+        tags.map((t) => String(t.code || "").toUpperCase())
+      );
+
+      const codigosNovos = new Set();
+
+      const novosRegistros = Array.from({ length: QTD_QR_A3 }).map(() => {
+        const code = gerarCodigoUnico(codigosExistentes, codigosNovos);
+        codigosNovos.add(code);
+
+        return {
+          code,
+          lote,
+          locked: false,
+          printed: false,
+          downloaded: false,
+          tipo: null,
+          name: null,
+        };
+      });
+
+      const { data: tagsCriadas, error: insertError } = await supabase
+        .from("tags")
+        .insert(novosRegistros)
+        .select("*");
+
+      if (insertError) {
+        console.error("Erro ao criar novo lote:", insertError);
+        alert("Erro ao criar novo lote de QR Codes.");
+        return;
+      }
+
+      if (!tagsCriadas || tagsCriadas.length === 0) {
+        alert("Nenhum QR foi criado.");
+        return;
+      }
+
+      await generateA3PDF(tagsCriadas);
+
+      const ids = tagsCriadas.map((t) => t.id);
+
+      const { error: updateError } = await supabase
+        .from("tags")
+        .update({ printed: true })
+        .in("id", ids);
+
+      if (updateError) {
+        console.error("Erro ao marcar lote como impresso:", updateError);
+        alert(
+          "O PDF foi gerado, mas houve erro ao marcar os QR como impressos."
+        );
+        return;
+      }
+
+      alert(`PDF A3 gerado com sucesso!\nLote: ${lote}`);
+
+      fetchData();
+    } catch (err) {
+      console.error("Erro ao gerar A3:", err);
+      alert("Erro inesperado ao gerar A3.");
+    } finally {
+      setGerandoA3(false);
     }
-
-    await generateA3PDF(tagsDisponiveis);
-
-    const ids = tagsDisponiveis.map((t) => t.id);
-
-    await supabase.from("tags").update({ printed: true }).in("id", ids);
-
-    alert("PDF A3 gerado com sucesso!");
-
-    fetchData();
   }
 
   // FILTRO
@@ -212,8 +298,17 @@ export default function Admin() {
             📥 Exportar XLS
           </button>
 
-          <button type="button" onClick={gerarA3} style={buttonRed}>
-            📄 Gerar A3
+          <button
+            type="button"
+            onClick={gerarA3}
+            style={{
+              ...buttonRed,
+              opacity: gerandoA3 ? 0.7 : 1,
+              cursor: gerandoA3 ? "not-allowed" : "pointer",
+            }}
+            disabled={gerandoA3}
+          >
+            {gerandoA3 ? "Gerando..." : "📄 Gerar A3"}
           </button>
         </section>
 
