@@ -23,6 +23,7 @@ export default function CadastroPet() {
 
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [processandoFoto, setProcessandoFoto] = useState(false);
 
   const [salvando, setSalvando] = useState(false);
 
@@ -31,23 +32,31 @@ export default function CadastroPet() {
     return limpo.length === 10 || limpo.length === 11;
   }
 
-  // 🔥 COMPRESSÃO (mantida)
+  // 🔥 COMPRESSÃO
   function comprimirImagem(file) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
       const reader = new FileReader();
 
+      reader.onerror = () => {
+        reject(new Error("Erro ao ler o arquivo da imagem"));
+      };
+
       reader.onload = (e) => {
         img.src = e.target.result;
+      };
+
+      img.onerror = () => {
+        reject(new Error("Erro ao carregar a imagem"));
       };
 
       img.onload = () => {
         const canvas = document.createElement("canvas");
 
         const maxWidth = 1200;
-        const scale = maxWidth / img.width;
+        const scale = img.width > maxWidth ? maxWidth / img.width : 1;
 
-        canvas.width = maxWidth;
+        canvas.width = img.width * scale;
         canvas.height = img.height * scale;
 
         const ctx = canvas.getContext("2d");
@@ -55,9 +64,15 @@ export default function CadastroPet() {
 
         canvas.toBlob(
           (blob) => {
+            if (!blob) {
+              reject(new Error("Erro ao comprimir a imagem"));
+              return;
+            }
+
             const compressedFile = new File([blob], file.name, {
               type: "image/jpeg",
             });
+
             resolve(compressedFile);
           },
           "image/jpeg",
@@ -73,14 +88,37 @@ export default function CadastroPet() {
     const file = e.target.files[0];
     if (!file) return;
 
-    const compressed = await comprimirImagem(file);
+    setProcessandoFoto(true);
+    setFoto(null);
+    setPreview(null);
 
-    setFoto(compressed);
-    setPreview(URL.createObjectURL(compressed));
+    try {
+      const compressed = await comprimirImagem(file);
+
+      setFoto(compressed);
+      setPreview(URL.createObjectURL(compressed));
+    } catch (err) {
+      console.error("Erro ao processar foto:", err);
+      alert("Não foi possível processar a foto. Tente outra imagem.");
+      setFoto(null);
+      setPreview(null);
+    } finally {
+      setProcessandoFoto(false);
+    }
   }
 
   async function salvar() {
     if (salvando) return;
+
+    if (processandoFoto) {
+      alert("A foto ainda está sendo carregada. Aguarde a prévia aparecer antes de salvar.");
+      return;
+    }
+
+    if (!foto || !preview) {
+      alert("Envie uma foto antes de salvar o cadastro.");
+      return;
+    }
 
     if (!nome) {
       alert("Preencha o nome do pet");
@@ -209,11 +247,14 @@ export default function CadastroPet() {
               type="button"
               onClick={() => document.getElementById("fileInputPet").click()}
               style={uploadButton}
+              disabled={processandoFoto || salvando}
             >
-              ⬆️ Enviar foto
+              {processandoFoto ? "Processando foto..." : "⬆️ Enviar foto"}
             </button>
 
-            <p style={uploadHint}>JPG ou PNG, máx 5MB</p>
+            <p style={uploadHint}>
+              A foto é obrigatória. Aguarde a prévia aparecer antes de salvar.
+            </p>
           </div>
         </div>
 
@@ -285,7 +326,9 @@ export default function CadastroPet() {
           subtitle="Adicione observações que possam ajudar quem encontrar o pet."
         />
 
-        <label style={label}>Condições especiais, comportamento ou observações</label>
+        <label style={label}>
+          Condições especiais, comportamento ou observações
+        </label>
         <textarea
           placeholder="Ex: Idoso e dócil, usa medicação, assusta com barulho..."
           value={observacoes}
@@ -299,8 +342,12 @@ export default function CadastroPet() {
         alterados. Revise antes de salvar.
       </TapWarningBox>
 
-      <TapPrimaryButton onClick={salvar} disabled={salvando}>
-        {salvando ? "Salvando..." : "💾 Salvar dados"}
+      <TapPrimaryButton onClick={salvar} disabled={salvando || processandoFoto}>
+        {salvando
+          ? "Salvando..."
+          : processandoFoto
+          ? "Processando foto..."
+          : "💾 Salvar dados"}
       </TapPrimaryButton>
 
       <p style={obs}>* Campos obrigatórios</p>
