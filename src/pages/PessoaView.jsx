@@ -56,6 +56,9 @@ export default function PessoaView() {
     ? telefone2
     : null;
 
+  const mostrarContato2 =
+    telefoneValido(telefone2) && Boolean(data?.tutor2_nome || telefone2);
+
   function calcularIdade(dataNascimento) {
     if (!dataNascimento) return null;
 
@@ -181,7 +184,7 @@ export default function PessoaView() {
         </TapCard>
       )}
 
-      {telefoneValido(telefone2) && telefone2 !== telefonePrincipal && (
+      {mostrarContato2 && (
         <TapCard>
           <p style={label}>CONTATO 2</p>
           <h3 style={contactName}>{data.tutor2_nome || "Responsável"}</h3>
