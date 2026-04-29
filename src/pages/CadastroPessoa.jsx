@@ -114,9 +114,31 @@ export default function CadastroPessoa() {
   }
 
   function formatarDataISO(data) {
-    if (!data || data.length !== 10) return null;
-    const [dia, mes, ano] = data.split("/");
-    return `${ano}-${mes}-${dia}`;
+    if (!data) return null;
+
+    if (data.length !== 10) {
+      alert("Data de nascimento inválida. Use o formato DD/MM/AAAA.");
+      return "INVALIDA";
+    }
+
+    const [dia, mes, ano] = data.split("/").map(Number);
+
+    const dataObj = new Date(ano, mes - 1, dia);
+
+    const dataValida =
+      dataObj.getFullYear() === ano &&
+      dataObj.getMonth() === mes - 1 &&
+      dataObj.getDate() === dia;
+
+    if (!dataValida) {
+      alert("Data de nascimento inválida. Confira dia, mês e ano.");
+      return "INVALIDA";
+    }
+
+    return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(
+      2,
+      "0"
+    )}`;
   }
 
   async function salvar() {
@@ -129,7 +151,9 @@ export default function CadastroPessoa() {
     }
 
     if (processandoFoto) {
-      alert("A foto ainda está sendo carregada. Aguarde a prévia aparecer antes de salvar.");
+      alert(
+        "A foto ainda está sendo carregada. Aguarde a prévia aparecer antes de salvar."
+      );
       salvandoRef.current = false;
       return;
     }
@@ -155,6 +179,14 @@ export default function CadastroPessoa() {
     if (telefone2 && !telefoneValido(telefone2)) {
       alert("Telefone inválido");
       salvandoRef.current = false;
+      return;
+    }
+
+    const dataNascimentoFormatada = formatarDataISO(dataNascTexto);
+
+    if (dataNascimentoFormatada === "INVALIDA") {
+      salvandoRef.current = false;
+      setSalvando(false);
       return;
     }
 
@@ -188,7 +220,7 @@ export default function CadastroPessoa() {
 
       const updateData = {
         name: nome,
-        data_nascimento: formatarDataISO(dataNascTexto),
+        data_nascimento: dataNascimentoFormatada,
         tipo_sanguineo: tipoSanguineo,
 
         tutor1_nome: tutor1Nome,
