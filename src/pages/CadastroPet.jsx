@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
@@ -26,6 +26,7 @@ export default function CadastroPet() {
   const [processandoFoto, setProcessandoFoto] = useState(false);
 
   const [salvando, setSalvando] = useState(false);
+  const salvandoRef = useRef(false);
 
   function telefoneValido(tel) {
     const limpo = tel.replace(/\D/g, "");
@@ -108,30 +109,41 @@ export default function CadastroPet() {
   }
 
   async function salvar() {
-    if (salvando) return;
+    if (salvandoRef.current) return;
+    salvandoRef.current = true;
+
+    if (salvando) {
+      salvandoRef.current = false;
+      return;
+    }
 
     if (processandoFoto) {
       alert("A foto ainda está sendo carregada. Aguarde a prévia aparecer antes de salvar.");
+      salvandoRef.current = false;
       return;
     }
 
     if (!foto || !preview) {
       alert("Envie uma foto antes de salvar o cadastro.");
+      salvandoRef.current = false;
       return;
     }
 
     if (!nome) {
       alert("Preencha o nome do pet");
+      salvandoRef.current = false;
       return;
     }
 
     if (!telefoneValido(telefone1)) {
       alert("Telefone inválido");
+      salvandoRef.current = false;
       return;
     }
 
     if (telefone2 && !telefoneValido(telefone2)) {
       alert("Telefone inválido");
+      salvandoRef.current = false;
       return;
     }
 
@@ -198,6 +210,7 @@ export default function CadastroPet() {
       console.error(err);
       alert("Erro inesperado");
     } finally {
+      salvandoRef.current = false;
       setSalvando(false);
     }
   }
