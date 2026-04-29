@@ -135,6 +135,15 @@ export default function CadastroPessoa() {
       return "INVALIDA";
     }
 
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    dataObj.setHours(0, 0, 0, 0);
+
+    if (dataObj > hoje) {
+      alert("Data de nascimento inválida. A data não pode ser no futuro.");
+      return "INVALIDA";
+    }
+
     return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(
       2,
       "0"
