@@ -144,6 +144,18 @@ export default function CadastroPessoa() {
       return "INVALIDA";
     }
 
+    const idadeMaxima = 120;
+    const dataMinima = new Date(
+      hoje.getFullYear() - idadeMaxima,
+      hoje.getMonth(),
+      hoje.getDate()
+    );
+
+    if (dataObj < dataMinima) {
+      alert("Data de nascimento inválida. Confira o ano informado.");
+      return "INVALIDA";
+    }
+
     return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(
       2,
       "0"
