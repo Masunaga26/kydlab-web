@@ -201,6 +201,19 @@ export default function CadastroPet() {
 
       if (error) {
         console.error(error);
+
+        const { data: tagAtual } = await supabase
+          .from("tags")
+          .select("locked,tipo")
+          .eq("code", code)
+          .single();
+
+        if (tagAtual?.locked) {
+          window.location.href =
+            tagAtual.tipo === "pessoa" ? `/pessoa/${code}` : `/pet/${code}`;
+          return;
+        }
+
         alert("Erro ao salvar");
         return;
       }

@@ -215,6 +215,20 @@ export default function CadastroPessoa() {
         .eq("code", code);
 
       if (error) {
+        console.error(error);
+
+        const { data: tagAtual } = await supabase
+          .from("tags")
+          .select("locked,tipo")
+          .eq("code", code)
+          .single();
+
+        if (tagAtual?.locked) {
+          window.location.href =
+            tagAtual.tipo === "pet" ? `/pet/${code}` : `/pessoa/${code}`;
+          return;
+        }
+
         alert("Erro ao salvar");
         return;
       }
