@@ -31,7 +31,7 @@ export default function Admin() {
           .order("created_at", { ascending: false })
           .range(from, to);
 
-        if (error) break;
+        if (error) throw error;
 
         todos = [...todos, ...data];
 
@@ -45,7 +45,7 @@ export default function Admin() {
 
       setTags(todos);
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao carregar tags:", err);
     } finally {
       setLoading(false);
     }
@@ -99,6 +99,11 @@ export default function Admin() {
     link.click();
   }
 
+  function gerarA3() {
+    const lista = tags.slice(0, QTD_QR_A3);
+    generateA3PDF(lista);
+  }
+
   function exportXLS() {
     const data = tags.map((t) => ({
       Código: t.code,
@@ -120,23 +125,25 @@ export default function Admin() {
     saveAs(new Blob([buffer]), "tags_kydlab.xlsx");
   }
 
-  // 🎨 UI
   return (
     <div style={{ padding: 20 }}>
-
       <h2>🛠 Admin KYDLAB</h2>
 
       {/* 🔥 STATS */}
-      <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
+      <div style={{ display: "flex", gap: 20, marginBottom: 20, flexWrap: "wrap" }}>
         <Card title="Total" value={total} />
         <Card title="Cadastrados" value={cadastrados} />
         <Card title="Disponíveis" value={disponiveis} />
         <Card title="Impressos" value={impressos} />
       </div>
 
-      <button onClick={exportXLS}>Exportar XLS</button>
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={exportXLS}>📥 Exportar XLS</button>
+        <button onClick={gerarA3}>🧾 Gerar A3 ({QTD_QR_A3})</button>
+      </div>
 
       <input
+        style={{ marginTop: 10 }}
         placeholder="Buscar código..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -155,7 +162,9 @@ export default function Admin() {
 
         <tbody>
           {tags
-            .filter((t) => t.code.includes(search))
+            .filter((t) =>
+              (t.code || "").toLowerCase().includes(search.toLowerCase())
+            )
             .map((t) => (
               <tr key={t.code}>
                 <td>{t.code}</td>
@@ -176,7 +185,6 @@ export default function Admin() {
   );
 }
 
-// 🔲 CARD
 function Card({ title, value }) {
   return (
     <div
