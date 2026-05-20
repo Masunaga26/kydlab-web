@@ -22,6 +22,28 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+
+        {/* 🔥 ADMIN PRIMEIRO (CRÍTICO) */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        <Route
+          path="/admin/edit/:code"
+          element={
+            <AdminRoute>
+              <AdminEdit />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
+          }
+        />
+
         {/* 🔥 REDIRECT RAIZ */}
         <Route path="/" element={<Navigate to="/escolha/TESTE123" />} />
 
@@ -40,27 +62,9 @@ export default function App() {
         <Route path="/pet/:code" element={<PetView />} />
         <Route path="/pessoa/:code" element={<PessoaView />} />
 
-        {/* 🔐 LOGIN ADMIN */}
-        <Route path="/admin/login" element={<AdminLogin />} />
+        {/* 🔥 FALLBACK (ESSENCIAL) */}
+        <Route path="*" element={<Navigate to="/" />} />
 
-        {/* 🛠️ ADMIN PROTEGIDO */}
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <Admin />
-            </AdminRoute>
-          }
-        />
-
-        <Route
-          path="/admin/edit/:code"
-          element={
-            <AdminRoute>
-              <AdminEdit />
-            </AdminRoute>
-          }
-        />
       </Routes>
     </BrowserRouter>
   );
