@@ -1,203 +1,68 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../supabaseClient";
-import { generateA3PDF } from "../utils/generateA3PDF";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
-import QRCode from "qrcode";
-
-const BASE_URL = "https://app.kydlab.com.br";
-const QTD_QR_A3 = 125;
 
 export default function Admin() {
   const [tags, setTags] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    fetchData();
+    // 🔁 Aqui você já deve ter sua chamada real (Supabase ou API)
+    // Exemplo mock (remove depois)
+    const mock = [
+      { code: "ABC123", status: "Disponível", nome: null },
+      { code: "DEF456", status: "Ativado", nome: "João" },
+      { code: "GHI789", status: "Ativado", nome: "Maria" },
+    ];
+    setTags(mock);
   }, []);
 
-  async function fetchData() {
-    let todos = [];
-    let from = 0;
-    let to = 999;
-    let hasMore = true;
-
-    try {
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from("tags")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .range(from, to);
-
-        if (error) throw error;
-
-        todos = [...todos, ...data];
-
-        if (data.length < 1000) {
-          hasMore = false;
-        } else {
-          from += 1000;
-          to += 1000;
-        }
-      }
-
-      setTags(todos);
-    } catch (err) {
-      console.error("Erro ao carregar tags:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // 📊 STATS
+  // 🔥 CONTADORES
   const total = tags.length;
-  const cadastrados = tags.filter((t) => t.locked).length;
-  const disponiveis = tags.filter((t) => !t.locked && !t.name).length;
-  const impressos = tags.filter((t) => t.printed).length;
-
-  const getStatus = (t) => {
-    if (t.locked) return "Cadastrado";
-    if (t.name) return "Vinculado";
-    return "Disponível";
-  };
-
-  const getTelefone = (t) => {
-    return t.tutor1_telefone || t.tutor2_telefone || "-";
-  };
-
-  function editar(tag) {
-    window.location.href = `/admin/edit/${tag.code}`;
-  }
-
-  async function limpar(tag) {
-    if (!confirm(`Deseja resetar o QR ${tag.code}?`)) return;
-
-    await supabase
-      .from("tags")
-      .update({
-        locked: false,
-        printed: false,
-        name: null,
-      })
-      .eq("code", tag.code);
-
-    fetchData();
-  }
-
-  async function baixarQR(tag) {
-    const url = `${BASE_URL}/qr/${tag.code}`;
-
-    const qrDataUrl = await QRCode.toDataURL(url, {
-      width: 1000,
-    });
-
-    const link = document.createElement("a");
-    link.href = qrDataUrl;
-    link.download = `QR_${tag.code}.png`;
-    link.click();
-  }
-
-  function gerarA3() {
-    const lista = tags.slice(0, QTD_QR_A3);
-    generateA3PDF(lista);
-  }
-
-  function exportXLS() {
-    const data = tags.map((t) => ({
-      Código: t.code,
-      Nome: t.name || "-",
-      Telefone: getTelefone(t),
-      Status: getStatus(t),
-      Impresso: t.printed ? "Sim" : "Não",
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Tags");
-
-    const buffer = XLSX.write(wb, {
-      bookType: "xlsx",
-      type: "array",
-    });
-
-    saveAs(new Blob([buffer]), "tags_kydlab.xlsx");
-  }
+  const cadastrados = tags.filter(t => t.status === "Ativado").length;
+  const disponiveis = tags.filter(t => t.status === "Disponível").length;
 
   return (
     <div style={{ padding: 20 }}>
-      <h2>🛠 Admin KYDLAB</h2>
+      <h1>🔧 Admin KYDLAB</h1>
 
-      {/* 🔥 STATS */}
-      <div style={{ display: "flex", gap: 20, marginBottom: 20, flexWrap: "wrap" }}>
-        <Card title="Total" value={total} />
-        <Card title="Cadastrados" value={cadastrados} />
-        <Card title="Disponíveis" value={disponiveis} />
-        <Card title="Impressos" value={impressos} />
+      {/* 📊 DASHBOARD */}
+      <div style={{
+        display: "flex",
+        gap: 20,
+        marginBottom: 20
+      }}>
+        <div style={box}>Total QR<br /><b>{total}</b></div>
+        <div style={box}>Cadastrados<br /><b>{cadastrados}</b></div>
+        <div style={box}>Disponíveis<br /><b>{disponiveis}</b></div>
       </div>
 
-      <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={exportXLS}>📥 Exportar XLS</button>
-        <button onClick={gerarA3}>🧾 Gerar A3 ({QTD_QR_A3})</button>
-      </div>
-
-      <input
-        style={{ marginTop: 10 }}
-        placeholder="Buscar código..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-
-      <table border="1" width="100%" style={{ marginTop: 20 }}>
+      {/* 📋 TABELA */}
+      <table border="1" width="100%">
         <thead>
           <tr>
             <th>Código</th>
             <th>Status</th>
             <th>Nome</th>
-            <th>Telefone</th>
-            <th>Ações</th>
           </tr>
         </thead>
-
         <tbody>
-          {tags
-            .filter((t) =>
-              (t.code || "").toLowerCase().includes(search.toLowerCase())
-            )
-            .map((t) => (
-              <tr key={t.code}>
-                <td>{t.code}</td>
-                <td>{getStatus(t)}</td>
-                <td>{t.name || "-"}</td>
-                <td>{getTelefone(t)}</td>
-
-                <td>
-                  <button onClick={() => baixarQR(t)}>QR</button>
-                  <button onClick={() => editar(t)}>Editar</button>
-                  <button onClick={() => limpar(t)}>Limpar</button>
-                </td>
-              </tr>
-            ))}
+          {tags.map((t, i) => (
+            <tr key={i}>
+              <td>{t.code}</td>
+              <td>{t.status}</td>
+              <td>{t.nome || "-"}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
   );
 }
 
-function Card({ title, value }) {
-  return (
-    <div
-      style={{
-        background: "#fff",
-        padding: 15,
-        borderRadius: 10,
-        boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-        minWidth: 120,
-      }}
-    >
-      <div style={{ fontSize: 12 }}>{title}</div>
-      <div style={{ fontSize: 22, fontWeight: "bold" }}>{value}</div>
-    </div>
-  );
-}
+const box = {
+  background: "#ef1c1c",
+  color: "#fff",
+  padding: 20,
+  borderRadius: 10,
+  flex: 1,
+  textAlign: "center",
+  fontSize: 18
+};
